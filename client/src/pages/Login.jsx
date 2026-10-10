@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { api } from '../api.js'
+import DentEraMark from '../components/DentEraMark.jsx'
 import '../login.css'
 
 const homeFor = u => (u && u.role === 'admin' ? '#/admin' : '#/dashboard')
@@ -58,7 +59,7 @@ export default function Login({ onDone }) {
     <main className="login-page">
       <header className="login-header">
         <a className="login-brand" href="#/" aria-label="DentEra home">
-          <span className="brand-mark" aria-hidden="true">D</span>
+          <span className="brand-mark"><DentEraMark /></span>
           <span>DentEra</span>
         </a>
         <nav className="login-header-links" aria-label="Sign-in navigation">

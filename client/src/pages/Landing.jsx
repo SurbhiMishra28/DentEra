@@ -1,5 +1,7 @@
 import React from "react"
 import "../landing.css"
+import Reveal from "../components/Reveal.jsx"
+import DentEraMark from "../components/DentEraMark.jsx"
 
 const FEATURES = [
   {
@@ -69,21 +71,29 @@ const TRUST_BADGES = [
   { icon: "🏥", text: "Built for real clinics" }
 ]
 
+const PLATFORM_PILLARS = [
+  { mark: "◷", name: "Appointments" },
+  { mark: "✦", name: "Patient records" },
+  { mark: "32", name: "Tooth charting" },
+  { mark: "◇", name: "Treatment plans" },
+  { mark: "₹", name: "Billing" }
+]
+
 const DEMO_PERSONAS = [
   { id: "dentistA", name: "Dr. Meera", role: "General Dentist", specialty: "General Dentistry", color: "primary", initial: "M" },
   { id: "dentistB", name: "Dr. Arjun", role: "Orthodontist", specialty: "Orthodontics", color: "amber", initial: "A" }
 ]
 
-export default function Landing() {
-  function openPersona(persona) {
-    location.hash = `#/login?persona=${encodeURIComponent(persona.id)}`
-  }
+function openPersona(persona) {
+  location.hash = `#/login?persona=${encodeURIComponent(persona.id)}`
+}
 
+export default function Landing() {
   return (
     <div className="landing" id="top">
       {/* Navigation */}
       <header className="topbar landing-bar">
-        <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark" aria-hidden="true">D</span> DentEra</a>
+        <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark"><DentEraMark /></span> DentEra</a>
         <span className="spacer" />
         <nav className="landing-nav" aria-label="Main navigation">
           <a href="#features">Features</a>
@@ -101,15 +111,15 @@ export default function Landing() {
             <span className="badge-pulse" aria-hidden="true"></span>
             Your practice, with a little more breathing room
           </div>
-          
+
           <h1 id="hero-title" className="animate-fade-up delay-1">
             More time for <span className="text-gradient">patients.</span><br />Less time on admin.
           </h1>
-          
+
           <p className="hero-sub animate-fade-up delay-2">
             Keep appointments, patient charts, treatment plans, and billing together in one workspace built around the way doctors work.
           </p>
-          
+
           <div className="hero-cta animate-fade-up delay-3">
             <a className="btn btn--primary btn--lg" href="#demo">
               <span>Explore the doctor demo</span>
@@ -118,7 +128,7 @@ export default function Landing() {
               </svg>
             </a>
           </div>
-          
+
           <div className="hero-trust animate-fade-up delay-4">
             <div className="trust-badges">
               {TRUST_BADGES.slice(1, 5).map((badge) => (
@@ -129,40 +139,30 @@ export default function Landing() {
             </div>
           </div>
         </div>
-        
+
         <div className="hero-visual">
-          <div className="doctor-hero-art" role="group" aria-label="A look inside a modern dental practice">
-            <span className="hero-art-orb hero-art-orb-mint" aria-hidden="true" />
-            <span className="hero-art-orb hero-art-orb-lilac" aria-hidden="true" />
-            <figure className="hero-photo hero-photo-main">
-              <img src="/dentist-1.jpg" alt="Dentist discussing an X-ray with a patient" />
-              <figcaption><span>Care that feels personal</span><small>Patient-first dentistry</small></figcaption>
-            </figure>
-            <figure className="hero-photo hero-photo-clinic">
-              <img src="/clinic-1.jpg" alt="Bright, modern dental treatment room" />
-              <figcaption>Thoughtfully designed clinics</figcaption>
-            </figure>
-            <figure className="hero-photo hero-photo-doctor">
-              <img src="/dentist-3.jpg" alt="Dentist focused on a procedure" />
-              <figcaption>Focused clinical care</figcaption>
-            </figure>
-            <div className="hero-art-note"><span aria-hidden="true">✦</span> Made for modern dental teams</div>
-            <div className="hero-art-note hero-art-note-care"><span aria-hidden="true">♡</span> Thoughtful care, every visit</div>
-          </div>
+          <figure className="hero-dna-video">
+            <img
+              className="hero-dna-image"
+              src="/dna-helix.png"
+              alt="Glowing blue and gold DNA helix"
+              fetchpriority="high"
+            />
+          </figure>
         </div>
       </section>
 
       {/* Social Proof Bar */}
-      <section className="social-proof" aria-label="Trusted by clinics">
+      <section className="social-proof" aria-label="DentEra practice tools">
         <div className="container">
-          <p className="social-proof-label">Trusted by modern dental practices</p>
-          <div className="social-proof-logos" aria-hidden="true">
-            <span>Smile Dental</span>
-            <span>Align Dental</span>
-            <span>Bright Smiles</span>
-            <span>Care Dental</span>
-            <span>Pearl Clinic</span>
-            <span>Nova Dental</span>
+          <p className="social-proof-label">One connected workspace for every part of your practice</p>
+          <div className="social-proof-logos">
+            {PLATFORM_PILLARS.map((pillar, i) => (
+              <Reveal as="span" className="platform-logo" key={pillar.name} delay={i * 70}>
+                <span className="platform-logo-mark" aria-hidden="true">{pillar.mark}</span>
+                <span className="platform-logo-name">{pillar.name}</span>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
@@ -170,15 +170,15 @@ export default function Landing() {
       {/* Features Section */}
       <section className="features" id="features" aria-labelledby="features-title">
         <div className="container">
-          <header className="section-header animate-fade-up">
-            <span className="section-kicker">Platform Features</span>
-            <h2 id="features-title">Everything your clinic needs in one platform</h2>
-            <p className="section-sub">From AI-powered scheduling to clinical charting and billing — DentEra replaces 5+ tools.</p>
+          <header className="section-header">
+            <Reveal as="span" className="section-kicker">Platform Features</Reveal>
+            <Reveal as="h2" id="features-title" delay={80}>Everything your clinic needs in one platform</Reveal>
+            <Reveal as="p" className="section-sub" delay={160}>From AI-powered scheduling to clinical charting and billing — DentEra replaces 5+ tools.</Reveal>
           </header>
-          
+
           <div className="features-grid">
             {FEATURES.map((feature, i) => (
-              <article key={feature.title} className="feature-card animate-fade-up" style={{ animationDelay: `${100 + i * 80}ms` }}>
+              <Reveal as="article" key={feature.title} className="feature-card" delay={i * 70}>
                 <div className="feature-icon">{feature.icon}</div>
                 <h3 className="feature-title">{feature.title}</h3>
                 <p className="feature-description">{feature.description}</p>
@@ -188,7 +188,7 @@ export default function Landing() {
                   </svg>
                   <span>{feature.benefit}</span>
                 </div>
-              </article>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -197,12 +197,25 @@ export default function Landing() {
       {/* How It Works */}
       <section className="how-it-works" id="how-it-works" aria-labelledby="how-title">
         <div className="container">
-          <header className="section-header animate-fade-up" style={{ textAlign: "center" }}>
-            <span className="section-kicker">How It Works</span>
-            <h2 id="how-title">Get running in minutes, not months</h2>
-            <p className="section-sub">No complex setup. No training required. Just sign in and start.</p>
+          <header className="section-header" style={{ textAlign: "center" }}>
+            <Reveal as="span" className="section-kicker">How It Works</Reveal>
+            <Reveal as="h2" id="how-title" delay={80}>Get running in minutes, not months</Reveal>
+            <Reveal as="p" className="section-sub" delay={160}>No complex setup. No training required. Just sign in and start.</Reveal>
           </header>
-          
+
+          <div className="media-band" aria-label="A closer look at the clinic">
+            {[
+              { src: "/dentist-2.jpg", alt: "Dentist working at a bright treatment station", caption: "A calmer clinic day" },
+              { src: "/clinic-1.jpg", alt: "Bright, modern dental treatment room", caption: "Everything in its place" },
+              { src: "/dentist-3.jpg", alt: "Dentist focused on patient care", caption: "More time for patients" }
+            ].map((image, i) => (
+              <Reveal as="figure" className="media-band-photo" key={image.src} delay={i * 100}>
+                <img src={image.src} alt={image.alt} loading="lazy" />
+                <figcaption>{image.caption}</figcaption>
+              </Reveal>
+            ))}
+          </div>
+
           <div className="steps-container">
             <div className="steps-track" aria-hidden="true"></div>
             <ol className="steps-grid">
@@ -212,11 +225,11 @@ export default function Landing() {
                 { n: "03", title: "Coordinate patient care", description: "Connect clinical notes, treatment plans, charts, and billing in a single workflow." },
                 { n: "04", title: "Chart & Bill", description: "Log treatments on the visual tooth chart. Create plans, generate invoices, track payments — all linked." }
               ].map((step, i) => (
-                <li key={step.n} className="step-card animate-fade-up" style={{ animationDelay: `${200 + i * 120}ms` }}>
+                <Reveal as="li" key={step.n} className="step-card" delay={i * 90}>
                   <div className="step-number">{step.n}</div>
                   <h3 className="step-title">{step.title}</h3>
                   <p className="step-description">{step.description}</p>
-                </li>
+                </Reveal>
               ))}
             </ol>
           </div>
@@ -226,14 +239,14 @@ export default function Landing() {
       {/* Testimonials */}
       <section className="testimonials" id="testimonials" aria-labelledby="testimonials-title">
         <div className="container">
-          <header className="section-header animate-fade-up" style={{ textAlign: "center" }}>
-            <span className="section-kicker">What Dentists Say</span>
-            <h2 id="testimonials-title">Loved by clinics across India</h2>
+          <header className="section-header" style={{ textAlign: "center" }}>
+            <Reveal as="span" className="section-kicker">What Dentists Say</Reveal>
+            <Reveal as="h2" id="testimonials-title" delay={80}>Loved by clinics across India</Reveal>
           </header>
-          
+
           <div className="testimonials-grid">
             {TESTIMONIALS.map((testimonial, i) => (
-              <article key={testimonial.author} className="testimonial-card animate-fade-up" style={{ animationDelay: `${i * 120}ms` }}>
+              <Reveal as="article" key={testimonial.author} className="testimonial-card" delay={i * 90}>
                 <div className="testimonial-quote">"{testimonial.quote}"</div>
                 <div className="testimonial-author">
                   <div className="author-avatar">{testimonial.author.split(" ")[1][0]}</div>
@@ -243,7 +256,7 @@ export default function Landing() {
                     <div className="author-clinic">{testimonial.clinic}</div>
                   </div>
                 </div>
-              </article>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -252,29 +265,31 @@ export default function Landing() {
       {/* Demo Section */}
       <section className="demo-section" id="demo" aria-labelledby="demo-title">
         <div className="container">
-          <header className="section-header animate-fade-up" style={{ textAlign: "center" }}>
-            <span className="section-kicker">Try It Now</span>
-            <h2 id="demo-title">Explore the demo — no setup, no credit card</h2>
-            <p className="section-sub">Choose a doctor profile and explore a sample dental practice workspace.</p>
+          <header className="section-header" style={{ textAlign: "center" }}>
+            <Reveal as="span" className="section-kicker">Try It Now</Reveal>
+            <Reveal as="h2" id="demo-title" delay={80}>Explore the demo — no setup, no credit card</Reveal>
+            <Reveal as="p" className="section-sub" delay={160}>Choose a doctor profile and explore a sample dental practice workspace.</Reveal>
           </header>
-          
+
           <div className="demo-grid">
             {DEMO_PERSONAS.map((persona, i) => (
-              <a key={persona.id} href={`#/login?persona=${encodeURIComponent(persona.id)}`} onClick={e => { e.preventDefault(); openPersona(persona) }} className="demo-card animate-fade-up" style={{ animationDelay: `${100 + i * 100}ms` }} data-persona={persona.id} aria-label={`Open ${persona.name} demo`}>
-                <span className="demo-avatar" aria-hidden="true" style={{ background: `var(--grad-${persona.color})` }}>
-                  {persona.initial}
-                </span>
-                <div className="demo-info">
-                  <h3 className="demo-name">{persona.name}</h3>
-                  <p className="demo-role">{persona.role}</p>
-                  <p className="demo-specialty">{persona.specialty}</p>
-                </div>
-                <span className="demo-arrow" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </span>
-              </a>
+              <Reveal key={persona.id} delay={i * 100}>
+                <a href={`#/login?persona=${encodeURIComponent(persona.id)}`} onClick={e => { e.preventDefault(); openPersona(persona) }} className="demo-card" data-persona={persona.id} aria-label={`Open ${persona.name} demo`}>
+                  <span className="demo-avatar" aria-hidden="true" style={{ background: `var(--grad-${persona.color})` }}>
+                    {persona.initial}
+                  </span>
+                  <div className="demo-info">
+                    <h3 className="demo-name">{persona.name}</h3>
+                    <p className="demo-role">{persona.role}</p>
+                    <p className="demo-specialty">{persona.specialty}</p>
+                  </div>
+                  <span className="demo-arrow" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </span>
+                </a>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -283,7 +298,7 @@ export default function Landing() {
       {/* CTA Section */}
       <section className="cta-section" aria-labelledby="cta-title">
         <div className="container">
-          <div className="cta-card animate-fade-up">
+          <Reveal className="cta-card">
             <div className="cta-content">
               <h2 id="cta-title">Ready to transform your practice?</h2>
               <p>Join 200+ clinics saving hours every week. Start your free demo in seconds.</p>
@@ -297,7 +312,7 @@ export default function Landing() {
               </a>
             </div>
             <p className="cta-note">No credit card • Instant access • Cancel anytime</p>
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -306,7 +321,7 @@ export default function Landing() {
         <div className="container">
           <div className="footer-grid">
             <div className="footer-brand">
-              <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark" aria-hidden="true">D</span> DentEra</a>
+              <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark"><DentEraMark /></span> DentEra</a>
               <p>AI-powered dental practice management. Built for dentists, by people who understand dentistry.</p>
               <div className="footer-social" hidden>
                 <a href="#" aria-label="Twitter"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg></a>

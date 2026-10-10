@@ -13,7 +13,6 @@ export default function App() {
   const [me, setMe] = useState(undefined) // undefined = loading, null = signed out (guest)
   const [chatOpen, setChatOpen] = useState(false)
   const [greetEra, setGreetEra] = useState(false)
-
   useEffect(() => {
     const onHash = () => {
       const hash = location.hash || '#/'

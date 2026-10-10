@@ -1,5 +1,5 @@
 // api.js — one fetch wrapper: cookies ride along, JSON always, 401 → login redirect.
-const base = '';
+const base = import.meta.env.DEV ? `${location.protocol}//${location.hostname}:8100` : '';
 async function call(path, opts = {}) {
   const res = await fetch(base + path, {
     credentials: 'include',

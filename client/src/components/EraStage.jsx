@@ -10,6 +10,7 @@ import './EraStage.css'
 //   • History:   per-day conversations as tag chips (server-persisted)
 const VOICE_EN = 'Magpie-Multilingual.EN-US.Sofia'
 const VOICE_HI = 'Magpie-Multilingual.HI-IN.Sofia'
+const FEMALE_DEVICE_VOICE = /\b(female|samantha|ava|victoria|karen|moira|fiona|tessa|susan|zira|hazel|jenny|aria|sara|sonia|natasha|heera|priya|raveena|neerja|aarti|swara|kavya|aditi|veena|lata|allison|joanna|emma|michelle|lucy|serena)\b/i
 const isDevanagari = t => /[\u0900-\u097F]/.test(t)
 const isHinglish = t => /\b(namaste|namaskar|kaise|kaisi|kya|hai|hain|nahi|aap|aapka|aapki|aapke|aapko|mera|meri|mere|dawai|dawa|bukhar|sehat|kripya|karein|mein|din|raat|subah|shaam|khana|pani|paani|bimari|ilaj|shukriya|dhanyavad|theek|thik)\b/i.test(t)
 const SR = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
@@ -86,7 +87,26 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
 
   // ---- Sofia voice out (EN-US default, HI-IN for Devanagari / Hinglish replies) ----
   const pickVoice = t => (isDevanagari(t) || isHinglish(t)) ? VOICE_HI : VOICE_EN
-  function speakWithDevice(gen, index, text) {
+  async function deviceVoices(synth) {
+    const available = synth.getVoices()
+    if (available.length) return available
+    return new Promise(resolve => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        synth.removeEventListener('voiceschanged', onVoicesChanged)
+        resolve(synth.getVoices())
+      }
+      const onVoicesChanged = () => {
+        if (synth.getVoices().length) finish()
+      }
+      const timer = setTimeout(finish, 1200)
+      synth.addEventListener('voiceschanged', onVoicesChanged)
+    })
+  }
+  async function speakWithDevice(gen, index, text) {
     if (gen !== speakSeq.current || fallbackGen.current === gen) return
     if (audioRef.current) {
       audioRef.current.pause()
@@ -103,9 +123,19 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
     setVoiceFallback(true)
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = isDevanagari(text) || isHinglish(text) ? 'hi-IN' : 'en-IN'
-    const voice = window.speechSynthesis.getVoices().find(candidate =>
+    const voices = await deviceVoices(window.speechSynthesis)
+    if (gen !== speakSeq.current) return
+    const languageVoices = voices.filter(candidate =>
       candidate.lang.toLowerCase().startsWith(utterance.lang.slice(0, 2)))
+    const voice = languageVoices.find(candidate => FEMALE_DEVICE_VOICE.test(candidate.name))
+      || voices.find(candidate =>
+        candidate.lang.toLowerCase().startsWith(utterance.lang.slice(0, 2))
+        && FEMALE_DEVICE_VOICE.test(candidate.name))
+      || languageVoices[0]
+      || voices.find(candidate => FEMALE_DEVICE_VOICE.test(candidate.name))
+      || null
     if (voice) utterance.voice = voice
+    utterance.pitch = 1.08
     utterance.onstart = () => {
       if (gen === speakSeq.current) setFaceState('speaking')
     }

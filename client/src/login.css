@@ -341,6 +341,237 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ---- login page polish + micro-animations ---- */
+.login-header {
+  animation: login-fade 0.6s ease both;
+}
+
+.login-brand .brand-mark { transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.login-brand:hover .brand-mark { transform: rotate(-8deg) scale(1.08); }
+
+.login-aside h1 { animation: login-rise 0.8s 120ms cubic-bezier(0.22, 0.9, 0.32, 1) both; }
+.login-aside > p { animation: login-rise 0.8s 240ms cubic-bezier(0.22, 0.9, 0.32, 1) both; }
+.login-aside ul li { animation: login-rise 0.6s cubic-bezier(0.22, 0.9, 0.32, 1) both; }
+.login-aside ul li:nth-child(1) { animation-delay: 400ms; }
+.login-aside ul li:nth-child(2) { animation-delay: 500ms; }
+.login-aside ul li:nth-child(3) { animation-delay: 600ms; }
+.login-aside .login-aside-kicker { animation: login-fade 0.7s 60ms ease both; }
+
+.loginform { animation: login-panel-enter 650ms 140ms ease both; }
+.loginform .login-eyebrow { animation: login-fade 0.7s 320ms ease both; }
+.loginform h2 { animation: login-rise 0.7s 360ms cubic-bezier(0.22, 0.9, 0.32, 1) both; }
+.loginform .sub { animation: login-rise 0.7s 440ms cubic-bezier(0.22, 0.9, 0.32, 1) both; }
+
+.loginform #loginF label,
+.loginform #loginF input,
+.loginform #loginF button[type="submit"] { animation: login-fade 0.55s ease both; }
+.loginform #loginF label[for="login-email"] { animation-delay: 520ms; }
+.loginform #loginF input[id="login-email"] { animation-delay: 540ms; }
+.loginform #loginF label[for="login-password"] { animation-delay: 600ms; }
+.loginform #loginF input[id="login-password"] { animation-delay: 620ms; }
+.loginform #loginF button[type="submit"] { animation-delay: 680ms; transition: transform 200ms ease, box-shadow 200ms ease; }
+.loginform #loginF button[type="submit"]:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(15, 167, 149, 0.4); }
+
+.demobox { animation: login-fade 0.6s 740ms ease both; }
+.loginform .login-privacy { animation: login-fade 0.6s 820ms ease both; }
+
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes login-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-header,
+  .login-aside .login-aside-kicker,
+  .login-aside h1, .login-aside > p, .login-aside ul li,
+  .loginform, .loginform .login-eyebrow, .loginform h2, .loginform .sub,
+  .loginform #loginF label, .loginform #loginF input, .loginform #loginF button[type="submit"],
+  .demobox, .loginform .login-privacy {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
+.login-page {
+  background:
+    radial-gradient(ellipse at 90% 8%, rgba(174, 232, 244, 0.62), transparent 42%),
+    linear-gradient(145deg, #f5fbff 0%, #e5f8fc 100%);
+}
+
+.login-header {
+  width: min(1480px, 100%);
+  min-height: 68px;
+}
+
+.login-brand,
+.login-brand:hover {
+  color: #142f43;
+  text-decoration: none;
+}
+
+.login-brand .brand-mark {
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #149cb1, #116b82);
+  box-shadow: 0 5px 15px rgba(15, 124, 146, 0.25);
+}
+
+.login-brand .dentera-mark {
+  width: 68%;
+  height: 68%;
+}
+
+.login-home {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: #315467;
+}
+
+.login-layout {
+  width: min(1240px, 100%);
+  grid-template-columns: minmax(0, 0.92fr) minmax(390px, 0.88fr);
+  align-items: center;
+}
+
+.login-aside {
+  min-height: 560px;
+  border-radius: 34px;
+  background:
+    radial-gradient(ellipse at 82% 12%, rgba(153, 227, 240, 0.4), transparent 40%),
+    linear-gradient(145deg, #d9f5fa 0%, #c4ebf3 100%);
+  box-shadow: 0 24px 65px rgba(22, 93, 116, 0.12);
+}
+
+.login-aside::after {
+  border-color: rgba(30, 127, 148, 0.16);
+}
+
+.login-aside-kicker {
+  color: #137f93;
+}
+
+.login-aside h1 {
+  color: #142f43;
+}
+
+.login-aside > p {
+  color: #476577;
+}
+
+.login-aside li {
+  color: #315467;
+}
+
+.login-aside li span {
+  color: #118ca1;
+}
+
+.loginform {
+  border: 1px solid rgba(42, 139, 158, 0.12);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 65px rgba(22, 93, 116, 0.12);
+}
+
+.login-eyebrow {
+  color: #117f93;
+}
+
+.loginform h2 {
+  color: #142f43;
+}
+
+.loginform .sub,
+.loginform #loginF label {
+  color: #526d7d;
+}
+
+.loginform #loginF input,
+.demorow select {
+  border-color: #d6e9ed;
+  background: #fbfeff;
+}
+
+.loginform #loginF input:focus,
+.demorow select:focus {
+  border-color: #2fa8bb;
+  box-shadow: 0 0 0 4px rgba(47, 168, 187, 0.14);
+}
+
+.loginform #loginF button[type="submit"],
+.demorow button {
+  background: linear-gradient(135deg, #1699ad, #116b82);
+  box-shadow: 0 10px 24px rgba(17, 107, 130, 0.2);
+}
+
+.demobox {
+  border-color: #d9edf1;
+  background: #f1fbfd;
+}
+
+.demolabel {
+  color: #24485b;
+}
+
+.loginform .authmsg:not(:empty) {
+  padding: 0.65rem 0.75rem;
+  border-radius: 11px;
+  background: #edf9fb;
+  color: #315467;
+}
+
+.loginform .login-privacy {
+  color: #687f8d;
+}
+
+@media (max-width: 800px) {
+  .login-layout {
+    width: min(620px, 100%);
+  }
+
+  .login-aside {
+    min-height: 0;
+    border-radius: 26px;
+  }
+
+  .login-aside h1 {
+    color: #142f43;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding-inline: 0.8rem;
+  }
+
+  .login-aside {
+    padding: 1.35rem 1rem;
+  }
+
+  .login-aside ul {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .loginform {
+    padding: 1.35rem 1.1rem;
+  }
+
+  .demorow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .demorow button {
+    min-height: 46px;
+  }
+}
+
 @media (max-width: 800px) {
   .login-layout {
     grid-template-columns: minmax(0, 1fr);

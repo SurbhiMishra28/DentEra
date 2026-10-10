@@ -13,7 +13,8 @@ const app = express();
 // guard against a junk PORT=0 in the shell env (Era's quirk — .env wins, but a shell-wide PORT=0
 // would otherwise bind to a random port); 0/empty both fall back to 8100.
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8100;
-const ORIGINS = String(process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8100').split(',').map(s => s.trim());
+const ORIGINS = String(process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8100')
+  .split(',').map(s => s.trim());
 
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || ORIGINS.includes(origin)), credentials: true }));
 app.use(express.json({ limit: '100kb' }));
