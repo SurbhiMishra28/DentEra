@@ -3428,10 +3428,10 @@
   padding: clamp(4rem, 7vw, 6rem) 0 clamp(2.2rem, 4vw, 3.2rem);
 }
 
-/* footer: sits flush under contact, navy like the theme's dark buttons */
+/* footer: rectangular, flush under contact, navy like the theme's dark buttons */
 .landing .footer {
   margin-top: 0;
-  border-radius: 32px 32px 0 0;
+  border-radius: 0;
   background:
     radial-gradient(ellipse at 12% 0%, rgba(39, 182, 201, 0.16), transparent 46%),
     linear-gradient(160deg, #1c2f42 0%, #131f2e 100%);

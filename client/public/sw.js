@@ -5,7 +5,7 @@
    - /api/*: never cached (live clinic data + auth cookies)
    - offline fallback page for navigations when the network is gone      */
 'use strict';
-const VERSION = 'dentera-v1';
+const VERSION = 'dentera-v2';
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const IMAGES = `${VERSION}-images`;
@@ -63,22 +63,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // images/other static: cache-first, keep the cache bounded
+  // images/other static: network-first (public images can be swapped any time),
+  // cache only as offline fallback so they stay fresh on every visit
   event.respondWith(
-    caches.match(req).then(async (cached) => {
-      if (cached) return cached;
-      try {
-        const res = await fetch(req);
+    fetch(req)
+      .then((res) => {
         if (res.ok) {
-          const cache = await caches.open(IMAGES);
-          event.waitUntil(cache.put(req, res.clone()));
-          const keys = await cache.keys();
-          if (keys.length > 60) await cache.delete(keys[0]);
+          event.waitUntil(caches.open(IMAGES).then((c) => c.put(req, res.clone())));
+          const cachePromise = caches.open(IMAGES).then(async (c) => {
+            const keys = await c.keys();
+            if (keys.length > 60) await c.delete(keys[0]);
+          });
+          event.waitUntil(cachePromise);
         }
         return res;
-      } catch {
-        return cached || Response.error();
-      }
-    })
+      })
+      .catch(() => caches.match(req).then((cached) => cached || Response.error()))
   );
 });
