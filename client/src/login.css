@@ -632,3 +632,28 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   Alignment fix: both login cards share exact same top/bottom
+   edges on desktop (stretch), the form's content stays vertically
+   centered inside its card instead of the card floating mid-track.
+   ============================================================ */
+@media (min-width: 801px) {
+  .login-layout {
+    align-items: stretch;
+  }
+
+  .loginform {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    justify-self: center;
+    width: min(480px, 100%);
+    min-height: 560px;
+  }
+
+  /* keep the message slot from shifting content when it appears */
+  .loginform .authmsg:empty {
+    display: none;
+  }
+}
