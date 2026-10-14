@@ -24,6 +24,39 @@ const SUGGESTIONS = [
   'Root canal cost'
 ]
 
+const GUEST_SUGGESTIONS = [
+  'Our services',
+  'Clinic timings',
+  'Meet the doctors',
+  'Book an appointment'
+]
+
+// Guest brain — local FAQ for landing-page visitors (no server/auth needed)
+function guestReply(m) {
+  const t = String(m).toLowerCase()
+  if (/\b(hi|hii+|hello|hey|namaste|namaskar)\b/.test(t))
+    return "Hello! I'm Era, the DentEra clinic assistant. Ask me about our services, doctors, timings, or how to book a visit."
+  if (/(timing|hour|open|close|when.*open|schedule|sunday|monday|weekend)/.test(t))
+    return "We're open Monday to Saturday, 9:30 AM to 8:00 PM. On Sundays we're open 10:00 AM to 2:00 PM for check-ups and emergencies."
+  if (/(service|treatment|offer|clean|scaling|braces|aligner|implant|root canal|whitening|extract|wisdom|kid|child)/.test(t))
+    return "We offer routine check-ups and cleaning, braces and clear aligners, root canals, dental implants, wisdom-tooth surgery, whitening, and special kids' dentistry. Tap Book Online to plan your visit."
+  if (/(doctor|dentist|who.*(team|clinic)|specialist|dr\.?)\b/.test(t))
+    return "Our team includes Dr. Meera Sharma (chief dentist and root-canal specialist), Dr. Arjun Patel (orthodontist), Dr. Nisha Rao (kids' specialist), and Dr. Vikram Singh (implantologist). Scroll to the Doctors section to meet them."
+  if (/(book|appointment|visit|slot|reserve|schedule)/.test(t))
+    return "Booking takes under a minute — tap Book Online on this page, or use Get Started at the top. You'll pick your doctor, day, and time, and we'll confirm instantly."
+  if (/(price|cost|fee|charge|rate|how much|expensive|estimate)/.test(t))
+    return "Consultations start at ₹300 and cleaning from ₹800. Bigger treatments are always quoted after your first check-up — clearly, on paper, with no hidden charges."
+  if (/(where|location|address|reach|direction|map|parking)/.test(t))
+    return "You'll find our address, phone number and directions in the Contact section below. Free parking is available right outside the clinic."
+  if (/(emergency|pain|hurt|urgent|accident|bleeding|swelling|broken)/.test(t))
+    return "For severe pain, swelling, or a broken tooth, call us right away — we keep same-day emergency slots. If it feels serious, come straight to the clinic."
+  if (/(thank|shukriya|dhanyavad|thanks)/.test(t))
+    return "You're most welcome! Anything else you'd like to know about DentEra?"
+  if (/(era|who are you|your name|what are you|robot|ai)/.test(t))
+    return "I'm Era — the face and voice of DentEra. I help visitors like you on this page, and help our doctors manage their day inside the clinic workspace."
+  return "I can help with our services, doctors, clinic timings, and booking a visit. Try asking — 'what are your timings?' or 'how do I book an appointment?'"
+}
+
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const dayLabel = d => {
   const y = new Date(); y.setDate(y.getDate() - 1)
@@ -35,6 +68,8 @@ const dayLabel = d => {
 }
 
 export default function EraStage({ me, onClose, greetOnOpen = false }) {
+  const guest = !me
+  const suggestions = guest ? GUEST_SUGGESTIONS : SUGGESTIONS
   const [convList, setConvList] = useState([])
   const [active, setActive] = useState('today')
   const [text, setText] = useState('')
@@ -154,6 +189,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
     if (i >= 0 && playingIdx === i) { stopSpeak(); return }
     stopSpeak()
     const gen = ++speakSeq.current
+    if (guest) { speakWithDevice(gen, i, text); return } // guests use the device voice (no server TTS without a session)
     try {
       setPlayingIdx(i)
       const res = await fetch('/api/assistant/tts', {
@@ -231,7 +267,9 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
   // ---- conversation plumbing ----
   const welcome = () => [{
     role: 'era',
-    text: `I'm Era, your dental assistant. I can help with appointments, patient charts, treatment plans, invoices, and common dental questions.`
+    text: guest
+      ? "I'm Era, the DentEra clinic assistant. Ask me about our services, doctors, timings, or how to book a visit."
+      : "I'm Era, your dental assistant. I can help with appointments, patient charts, treatment plans, invoices, and common dental questions."
   }]
   function emptyLog() { setLog(welcome()) }
   function renderMessages(msgs) {
@@ -252,6 +290,14 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
     }
   }
   useEffect(() => {
+    if (guest) {
+      const greeting = "Hello! I'm Era, the DentEra clinic assistant. Ask me about our services, doctors, or how to book a visit — type, or tap Talk to speak."
+      if (greetOnOpen) {
+        setLog([...welcome(), { role: 'era', text: greeting }])
+        if (voiceOn) speak(-1, greeting)
+      } else emptyLog()
+      return
+    }
     const greeting = `Hello ${me.name}, I’m Era. Ask me about your appointments, patient charts, treatment plans, or invoices. You can type or tap Talk to speak.`
     if (greetOnOpen) {
       setLog([...welcome(), { role: 'era', text: greeting }])
@@ -302,6 +348,13 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
     setActive('today')
     setLog(l => [...l, { role: 'user', text: message }])
     setThinking(true); setFaceState('idle')
+    if (guest) {
+      const reply = guestReply(message)
+      setLog(l => [...l, { role: 'era', text: reply }])
+      if (voiceOn) speak(-1, reply)
+      setThinking(false)
+      return
+    }
     try {
       const { status, data } = await api.post('/api/assistant/chat', { message })
       if (status === 200) {
@@ -347,7 +400,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
             </div>
           </div>
 
-          <p className="eraWho">{me.name} · {me.role}{me.dentistId ? ` · dentist #${me.dentistId}` : ''}</p>
+          <p className="eraWho">{guest ? 'Visitor · DentEra clinic' : `${me.name} · ${me.role}${me.dentistId ? ` · dentist #${me.dentistId}` : ''}`}</p>
 
           <div className="ctrl">
             <button id="mic" className={micOn ? 'on' : ''} aria-pressed={micOn} onClick={toggleMic}
@@ -359,15 +412,15 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
               title={voiceOn ? 'Mute Era' : 'Era speaks replies'}>
               {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
             </button>
-            <button className="ghostbtn" onClick={() => setHistoryOpen(h => !h)} title="Conversation history" aria-expanded={historyOpen}>
+            {!guest && <button className="ghostbtn" onClick={() => setHistoryOpen(h => !h)} title="Conversation history" aria-expanded={historyOpen}>
               💬 {historyOpen ? 'Hide chats' : 'Chats'}
-            </button>
+            </button>}
           </div>
 
           <div className="row">
             <input ref={inputRef} value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && send(e)}
-              placeholder={micOn ? 'Listening… speak now' : 'Ask Era — e.g. book Ravi tomorrow at 5pm'}
+              placeholder={micOn ? 'Listening… speak now' : guest ? 'Ask Era — e.g. what are your clinic timings?' : 'Ask Era — e.g. book Ravi tomorrow at 5pm'}
               aria-label="Message Era" />
             <button onClick={e => send(e)} disabled={thinking} aria-label="Send message">Send</button>
           </div>
@@ -382,7 +435,8 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
         {/* ---- conversation ---- */}
         <div className={'eraStageChat' + (historyOpen ? ' wide' : '')}>
           <div className="cpTags" aria-label="Conversation days">
-            {historyOpen && chips.map(c => (
+            {guest && <span className="eraHint">💬 Ask away — I'm here to help you explore DentEra.</span>}
+            {!guest && historyOpen && chips.map(c => (
               <span key={c.id || c.day} style={{ position: 'relative', display: 'inline-flex' }}>
                 <button className={'chip' + ((active === String(c.id)) || (active === 'today' && c.day === today()) ? ' on' : '')}
                   onClick={() => c.id ? openConv(c.id) : (setActive('today'), emptyLog())}>
@@ -391,7 +445,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
                 {c.id ? <button className="chipdel" title="Delete this conversation" aria-label={`Delete ${dayLabel(c.day)} conversation`} onClick={e => delConv(c.id, e)}>×</button> : null}
               </span>
             ))}
-            {!historyOpen && <span className="eraHint">💬 {chips.length} day(s) of history — tap <b>Chats</b> to browse</span>}
+            {!guest && !historyOpen && <span className="eraHint">💬 {chips.length} day(s) of history — tap <b>Chats</b> to browse</span>}
           </div>
 
           <div className="cpLog" ref={logRef} aria-live="polite">
@@ -414,7 +468,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
             )}
             {showSuggestions && (
               <div className="sugs" role="list" aria-label="Suggested questions">
-                {SUGGESTIONS.map(s => (
+                {suggestions.map(s => (
                   <button key={s} type="button" role="listitem" className="sug" onClick={e => send(e, s)}>{s}</button>
                 ))}
               </div>

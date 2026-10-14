@@ -277,7 +277,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </section>}
       </div>}
 
-      {(activeSection === 'overview' || activeSection === 'billing') && <section className="panel dashboard-billing" id="billing">
+      {activeSection === 'billing' && <section className="panel dashboard-billing" id="billing">
         <div className="panelhead">
           <div><span className="panel-eyebrow">PAYMENTS TO FOLLOW UP</span><h3>Unpaid invoices</h3></div>
           <span className="billing-total">{money(due)} <small>outstanding</small></span>

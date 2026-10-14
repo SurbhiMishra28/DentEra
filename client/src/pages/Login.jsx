@@ -4,15 +4,10 @@ import DentEraMark from '../components/DentEraMark.jsx'
 import '../login.css'
 
 const homeFor = u => (u && u.role === 'admin' ? '#/admin' : '#/dashboard')
-const DEMO_PERSONAS = ['dentistA', 'dentistB']
 
 export default function Login({ onDone }) {
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
-  const [persona, setPersona] = useState(() => {
-    const requested = new URLSearchParams(location.hash.split('?')[1] || '').get('persona')
-    return DEMO_PERSONAS.includes(requested) ? requested : DEMO_PERSONAS[0]
-  })
 
   async function submit(e) {
     e.preventDefault()
@@ -93,13 +88,26 @@ export default function Login({ onDone }) {
           <p className="authmsg" role="status" aria-live="polite">{msg}</p>
 
           <div className="demobox">
-            <span className="demolabel">Or explore a demo clinic</span>
-            <div className="demorow">
-              <select id="persona" value={persona} onChange={e => setPersona(e.target.value)} aria-label="Choose a demo persona" disabled={busy}>
-                <option value="dentistA">Dr. Meera — Dentist 1</option>
-                <option value="dentistB">Dr. Arjun — Dentist 2</option>
-              </select>
-              <button type="button" disabled={busy} onClick={() => demo(persona)}>Try demo</button>
+            <span className="demolabel">Or explore a demo clinic — pick a doctor</span>
+            <div className="demo-personas">
+              <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('dentistA')}>
+                <img
+                  src="/doctor-1.jpg"
+                  alt=""
+                  loading="lazy"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/clinic-1.jpg" }}
+                />
+                <span><b>Dr. Meera Sharma</b><small>Chief Dentist</small></span>
+              </button>
+              <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('dentistB')}>
+                <img
+                  src="/doctor-2.jpg"
+                  alt=""
+                  loading="lazy"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/dentist-1.jpg" }}
+                />
+                <span><b>Dr. Arjun Patel</b><small>Orthodontist</small></span>
+              </button>
             </div>
           </div>
 
