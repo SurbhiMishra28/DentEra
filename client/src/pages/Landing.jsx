@@ -152,7 +152,7 @@ export default function Landing() {
           <figure className="hero-dna-video">
             <img
               className="hero-dna-image"
-              src="/image.png"
+              src="/image.jpg"
               alt="Dentist consulting with a patient in a modern clinic"
               fetchpriority="high"
             />
