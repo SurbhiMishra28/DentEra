@@ -3163,6 +3163,145 @@
   box-shadow: inset 0 0 0 1px rgba(22, 40, 58, 0.05);
 }
 
+/* ==========================================================================
+   dedicated section pages (/about /services /why-choose /gallery /blog)
+   ========================================================================== */
+
+/* current page highlighted in the navbar */
+.landing .landing-nav a.is-current {
+  color: var(--teal-deep);
+  font-weight: 800;
+}
+
+.landing .landing-nav a.is-current::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 22px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--teal-bright);
+  transform: translateX(-50%);
+}
+
+/* page hero */
+.landing .subhero {
+  padding: clamp(2.6rem, 5.5vw, 4.5rem) 0 clamp(1.6rem, 3.5vw, 2.8rem);
+  background:
+    radial-gradient(900px 420px at 88% -20%, rgba(39, 182, 201, 0.16), transparent 60%),
+    linear-gradient(180deg, #f6fcfd, #fff 85%);
+  text-align: center;
+}
+
+.landing .subhero-title {
+  margin: 0.4rem 0 0.7rem;
+  font-size: clamp(1.9rem, 3.8vw, 2.9rem);
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  color: var(--navy);
+}
+
+.landing .subhero .section-sub {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+/* services page helper line */
+.landing .services-more {
+  margin: 1.6rem 0 0;
+  text-align: center;
+  color: #526d7d;
+  font-size: 0.92rem;
+}
+
+.landing .services-more a {
+  color: var(--teal-deep);
+  font-weight: 800;
+}
+
+/* CTA band */
+.landing .section-cta {
+  padding: clamp(2.4rem, 5vw, 3.6rem) 0;
+}
+
+.landing .section-cta-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.4rem;
+  padding: clamp(1.6rem, 3vw, 2.4rem) clamp(1.5rem, 3.5vw, 2.8rem);
+  border-radius: 26px;
+  background: linear-gradient(120deg, #0e7d92, #16283a 78%);
+  color: #fff;
+  box-shadow: 0 24px 60px rgba(14, 125, 146, 0.35);
+}
+
+.landing .section-cta-inner h2 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+  font-size: clamp(1.35rem, 2.6vw, 1.8rem);
+  letter-spacing: -0.02em;
+}
+
+.landing .section-cta-inner p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.92rem;
+}
+
+.landing .section-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  flex: 0 0 auto;
+}
+
+/* compact footer for section pages */
+.landing .page-footer {
+  padding: 1.6rem 0 1.8rem;
+  border-top: 1px solid rgba(22, 40, 58, 0.08);
+  background: #fff;
+}
+
+.landing .page-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.landing .page-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.2rem;
+}
+
+.landing .page-footer-nav a {
+  color: #526d7d;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.landing .page-footer-nav a:hover {
+  color: var(--teal-deep);
+  text-decoration: none;
+}
+
+.landing .page-footer-copy {
+  margin: 1.1rem 0 0;
+  color: #8ba0ab;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 720px) {
+  .landing .section-cta-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .slider-btn--fill:hover { background: #0b677a; }
 
 /* ---------- responsive ---------- */

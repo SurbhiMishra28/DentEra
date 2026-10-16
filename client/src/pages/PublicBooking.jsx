@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { Tooth, Sparkles, Check, Calendar, Clock, Lock, ChevronRight } from '../components/Icons.jsx'
+import './publicbooking.css'
 
 // Public booking — a full page (not a cramped card): progress rail, dentist cards,
 // roomy date/slot grids, then a summary + details. API contract unchanged.
@@ -78,7 +79,8 @@ export default function PublicBooking() {
       ) : (
         <div className="bookmain">
           <header className="bookhero">
-            <h1>Book an appointment</h1>
+            <span className="book-kicker"><Sparkles size={13} /> Online booking</span>
+            <h1>Book an <em className="book-serif">appointment</em></h1>
             <p className="muted">No account needed — your phone number is used only for this appointment.</p>
           </header>
 
