@@ -284,3 +284,24 @@ export const ClipboardList = (p) => (
     <path d="M9 10h6M9 13.5h6M9 17h4" />
   </svg>
 )
+
+export const LogOut = (p) => (
+  <svg {...base(p)}>
+    <path d="M14 4h4.2A1.8 1.8 0 0 1 20 5.8v12.4a1.8 1.8 0 0 1-1.8 1.8H14" />
+    <path d="M9.5 8L5.5 12l4 4" />
+    <path d="M5.5 12H15" />
+  </svg>
+)
+
+export const PieChart = (p) => (
+  <svg {...base(p)}>
+    <path d="M12 3.6A8.4 8.4 0 1 0 20.4 12H12V3.6z" />
+    <path d="M15 3.9A8.44 8.44 0 0 1 20.1 9H15V3.9z" />
+  </svg>
+)
+
+export const BarChart = (p) => (
+  <svg {...base(p)}>
+    <path d="M5 20v-8M12 20V5M19 20v-5" />
+  </svg>
+)
