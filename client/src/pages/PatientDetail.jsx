@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import ToothChart from '../components/ToothChart.jsx'
+import { AlertTriangle, MessageCircle } from '../components/Icons.jsx'
 
 export default function PatientDetail({ me, id, onChat }) {
   const [chart, setChart] = useState(null)
@@ -45,9 +46,9 @@ export default function PatientDetail({ me, id, onChat }) {
       <div className="topbar">
         <a className="mini linkbtn" href="#/dashboard">← Dashboard</a>
         <span className="who">{p.name} {p.dob ? `· b. ${p.dob}` : ''}</span>
-        {p.medical_notes && <span className="pill warnpill">⚠️ {p.medical_notes}</span>}
+        {p.medical_notes && <span className="pill warnpill"><AlertTriangle size={12} /> {p.medical_notes}</span>}
         <span className="spacer" />
-        {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}>💬 Ask Era</button>}
+        {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={13} /> Ask Era</button>}
       </div>
 
       <div className="panel">

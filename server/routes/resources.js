@@ -53,6 +53,14 @@ router.get('/appointments', h((req, res, reqId) => {
   res.json({ ok: true, data: rows });
 }));
 
+// free 30-min start slots for the booking form (own schedule minus booked, same guard as appointments)
+router.get('/slots', h((req, res, reqId) => {
+  const d = D(req.auth);
+  const slots = tools.getAvailableSlots({ dentistId: d }, { date: req.query.date });
+  audit(req.auth.sub, d, 'list', 'slots', reqId, true, null, 'appointments', null);
+  res.json({ ok: true, data: slots });
+}));
+
 router.post('/appointments', h((req, res, reqId) => {
   const d = D(req.auth);
   const out = runTool({ dentistId: d }, 'createAppointment', req.body || {});

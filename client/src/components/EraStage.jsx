@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
+import { Mic, Volume2, VolumeX, XMark, MessageCircle } from './Icons.jsx'
 import './EraStage.css'
 
 // EraStage — the FULL Era experience, not a chat widget (mirrors the root Era app's #face stage):
@@ -388,7 +389,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
       <section className="eraStage" data-state={stageClass}>
         {/* ---- character stage ---- */}
         <div className="eraStageFace">
-          <button className="mini eraClose" onClick={onClose} aria-label="Close assistant">✕</button>
+          <button className="mini eraClose" onClick={onClose} aria-label="Close assistant"><XMark size={14} /></button>
           <div className="eraStageId">
             <h2>Era</h2>
             <span className={'facestatus ' + stageClass}>{statusText}</span>
@@ -405,15 +406,15 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
           <div className="ctrl">
             <button id="mic" className={micOn ? 'on' : ''} aria-pressed={micOn} onClick={toggleMic}
               title={SR ? (micOn ? 'Stop listening' : 'Talk to Era') : 'Voice input needs Chrome or Edge'}>
-              🎤 {micOn ? 'Listening…' : 'Talk'}
+              <Mic size={15} /> {micOn ? 'Listening…' : 'Talk'}
             </button>
             <button className="ghostbtn" onClick={stopSpeak} title="Stop speaking">Stop</button>
             <button className="ghostbtn voicetoggle" onClick={toggleVoice} aria-pressed={voiceOn}
               title={voiceOn ? 'Mute Era' : 'Era speaks replies'}>
-              {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
+              {voiceOn ? <><Volume2 size={15} /> Voice on</> : <><VolumeX size={15} /> Voice off</>}
             </button>
             {!guest && <button className="ghostbtn" onClick={() => setHistoryOpen(h => !h)} title="Conversation history" aria-expanded={historyOpen}>
-              💬 {historyOpen ? 'Hide chats' : 'Chats'}
+              <MessageCircle size={15} /> {historyOpen ? 'Hide chats' : 'Chats'}
             </button>}
           </div>
 
@@ -426,16 +427,16 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
           </div>
           <p className="cpnote eraStageNote">
             {micNote ? micNote
-              : voiceOn && voiceFallback ? '🔊 Era is speaking with your device voice · 🎤 to talk, or just type.'
-              : voiceOn ? '🔊 Era speaks replies aloud · 🎤 to talk, or just type.'
-              : '🔇 Voice is muted — tap “Voice off” to let Era speak.'}
+              : voiceOn && voiceFallback ? 'Era is speaking with your device voice — tap Talk to speak, or just type.'
+              : voiceOn ? 'Era speaks replies aloud — tap Talk to speak, or just type.'
+              : 'Voice is muted — tap “Voice off” to let Era speak.'}
           </p>
         </div>
 
         {/* ---- conversation ---- */}
         <div className={'eraStageChat' + (historyOpen ? ' wide' : '')}>
           <div className="cpTags" aria-label="Conversation days">
-            {guest && <span className="eraHint">💬 Ask away — I'm here to help you explore DentEra.</span>}
+            {guest && <span className="eraHint">Ask away — I'm here to help you explore DentEra.</span>}
             {!guest && historyOpen && chips.map(c => (
               <span key={c.id || c.day} style={{ position: 'relative', display: 'inline-flex' }}>
                 <button className={'chip' + ((active === String(c.id)) || (active === 'today' && c.day === today()) ? ' on' : '')}
@@ -445,7 +446,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
                 {c.id ? <button className="chipdel" title="Delete this conversation" aria-label={`Delete ${dayLabel(c.day)} conversation`} onClick={e => delConv(c.id, e)}>×</button> : null}
               </span>
             ))}
-            {!guest && !historyOpen && <span className="eraHint">💬 {chips.length} day(s) of history — tap <b>Chats</b> to browse</span>}
+            {!guest && !historyOpen && <span className="eraHint">{chips.length} day(s) of history — tap <b>Chats</b> to browse</span>}
           </div>
 
           <div className="cpLog" ref={logRef} aria-live="polite">
@@ -456,7 +457,7 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
                 {m.role === 'era' && m.text && (
                   <button className="tts" title={playingIdx === i ? 'Stop' : 'Play reply aloud'}
                     aria-label={playingIdx === i ? 'Stop voice' : 'Play reply as voice'} onClick={() => speak(i, m.text)}>
-                    {playingIdx === i ? '⏹' : '🔊'}
+                    {playingIdx === i ? <VolumeX size={13} /> : <Volume2 size={13} />}
                   </button>
                 )}
               </div>

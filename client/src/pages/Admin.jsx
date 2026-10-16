@@ -1,5 +1,9 @@
 ﻿import React, { useEffect, useState } from "react"
 import { api } from "../api.js"
+import {
+  LayoutGrid, Calendar, Users, Wallet, Shield, CalendarCheck, ClipboardList, Globe,
+  Stethoscope, Tooth, RotateCcw, AlertTriangle,
+} from "../components/Icons.jsx"
 
 // Admin panel — clinic-wide view for role "admin" (and "reception", who share
 // the same read scope on the server). Read-only: invoice payments reuse the
@@ -11,11 +15,11 @@ const niceDate = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); if 
   return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) }
 
 const TABS = [
-  ["overview", "📊 Overview"],
-  ["appointments", "🗓️ Appointments"],
-  ["patients", "👥 Patients"],
-  ["invoices", "💳 Invoices"],
-  ["audit", "🛡️ Audit trail"]
+  ["overview", "Overview", LayoutGrid],
+  ["appointments", "Appointments", Calendar],
+  ["patients", "Patients", Users],
+  ["invoices", "Invoices", Wallet],
+  ["audit", "Audit trail", Shield]
 ]
 
 // Animated number component
@@ -81,14 +85,14 @@ export default function Admin({ me }) {
   const who = nm => nm
 
   const statConfig = ov ? [
-    { key: "appts_today", label: "appointments today", icon: "📅", color: "mint", delay: 0 },
-    { key: "appts_week", label: "next 7 days", icon: "📆", color: "mint", delay: 100 },
-    { key: "patients", label: "patients", icon: "👥", color: "amber", delay: 200 },
-    { key: "unpaid_due", label: "unpaid revenue", icon: "💰", color: "error", delay: 300, money: true },
-    { key: "plans_active", label: "active plans", icon: "📋", color: "info", delay: 400 },
-    { key: "public_bookings", label: "public bookings", icon: "🌐", color: "success", delay: 500 },
-    { key: "dentists", label: "dentists / users", icon: "👨‍⚕️", color: "mint", delay: 600, custom: `${ov.dentists}/${ov.users}` },
-    { key: "treatments", label: "treatments", icon: "🦷", color: "amber", delay: 700 },
+    { key: "appts_today", label: "appointments today", icon: CalendarCheck, color: "mint", delay: 0 },
+    { key: "appts_week", label: "next 7 days", icon: Calendar, color: "mint", delay: 100 },
+    { key: "patients", label: "patients", icon: Users, color: "amber", delay: 200 },
+    { key: "unpaid_due", label: "unpaid revenue", icon: Wallet, color: "error", delay: 300, money: true },
+    { key: "plans_active", label: "active plans", icon: ClipboardList, color: "info", delay: 400 },
+    { key: "public_bookings", label: "public bookings", icon: Globe, color: "success", delay: 500 },
+    { key: "dentists", label: "dentists / users", icon: Stethoscope, color: "mint", delay: 600, custom: `${ov.dentists}/${ov.users}` },
+    { key: "treatments", label: "treatments", icon: Tooth, color: "amber", delay: 700 },
   ] : []
 
   return (
@@ -107,9 +111,9 @@ export default function Admin({ me }) {
           <h1>Clinic Administration</h1>
           <p className="muted">Complete practice overview — appointments, patients, revenue, and Era's activity trail.</p>
           <div className="admin-quick-actions">
-            <a href="#/book" className="btn btn--ghost btn--sm">🌐 Public Booking</a>
-            <a href="#/dashboard" className="btn btn--ghost btn--sm">👨‍⚕️ Doctor Dashboard</a>
-            <button className="btn btn--amber btn--sm" onClick={() => window.location.reload()}>🔄 Refresh Data</button>
+            <a href="#/book" className="btn btn--ghost btn--sm"><Globe size={14} /> Public Booking</a>
+            <a href="#/dashboard" className="btn btn--ghost btn--sm"><Stethoscope size={14} /> Doctor Dashboard</a>
+            <button className="btn btn--amber btn--sm" onClick={() => window.location.reload()}><RotateCcw size={14} /> Refresh Data</button>
           </div>
         </div>
         <div className="admin-hero-stats" aria-label="Key metrics">
@@ -132,8 +136,8 @@ export default function Admin({ me }) {
       </header>
 
       <nav className="tabs" role="tablist" aria-label="Admin sections">
-        {TABS.map(([id, label]) => (
-          <button key={id} role="tab" aria-selected={tab === id} className={"tab" + (tab === id ? " on" : "")} onClick={() => setTab(id)}>{label}</button>
+        {TABS.map(([id, label, Icon]) => (
+          <button key={id} role="tab" aria-selected={tab === id} className={"tab" + (tab === id ? " on" : "")} onClick={() => setTab(id)}><Icon size={14} /> {label}</button>
         ))}
       </nav>
 
@@ -201,7 +205,7 @@ export default function Admin({ me }) {
                     <td>{p.phone || "—"}</td>
                     <td className="muted">{p.dentists || "—"}</td>
                     <td>{p.visits}</td>
-                    <td>{p.medical_notes ? <span className="warnpill pill">⚠️ {p.medical_notes}</span> : "—"}</td>
+                    <td>{p.medical_notes ? <span className="warnpill pill"><AlertTriangle size={11} /> {p.medical_notes}</span> : "—"}</td>
                   </tr>
                 ))}
               </tbody>

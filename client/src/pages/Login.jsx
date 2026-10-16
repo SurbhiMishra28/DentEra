@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { api } from '../api.js'
 import DentEraMark from '../components/DentEraMark.jsx'
+import { Check } from '../components/Icons.jsx'
 import '../login.css'
 
 const homeFor = u => (u && u.role === 'admin' ? '#/admin' : '#/dashboard')
@@ -68,9 +69,9 @@ export default function Login({ onDone }) {
           <h1>Your clinic, in one place.</h1>
           <p>Spend less time switching between tools and more time focused on your patients.</p>
           <ul>
-            <li><span aria-hidden="true">✦</span> Appointments and patient records</li>
-            <li><span aria-hidden="true">✦</span> Treatment plans and clinical charting</li>
-            <li><span aria-hidden="true">✦</span> Billing and payment tracking</li>
+            <li><span aria-hidden="true"><Check size={14} /></span> Appointments and patient records</li>
+            <li><span aria-hidden="true"><Check size={14} /></span> Treatment plans and clinical charting</li>
+            <li><span aria-hidden="true"><Check size={14} /></span> Billing and payment tracking</li>
           </ul>
         </aside>
 

@@ -3,19 +3,27 @@ import "../landing.css"
 import Reveal from "../components/Reveal.jsx"
 import DentEraMark from "../components/DentEraMark.jsx"
 import EraStage from "../components/EraStage.jsx"
+import {
+  Tooth, Smile, ShieldCheck, Sparkles, Medal, Heart, Wallet, Clock, Droplet, Users,
+  Trophy, MapPin, Phone, Mail, ChevronDown,
+} from "../components/Icons.jsx"
 
 const SERVICES = [
-  { icon: "🦷", title: "Check-ups & Cleaning", desc: "Routine exams, scaling and polishing that catch small issues before they become painful ones." },
-  { icon: "😁", title: "Braces & Aligners", desc: "Metal, ceramic and clear aligner options to straighten smiles at every age — with clear plans." },
-  { icon: "🛡️", title: "Dental Implants", desc: "Permanent, natural-looking replacements for missing teeth, planned and placed end to end." },
-  { icon: "✨", title: "Root Canal & Surgery", desc: "Gentle root canals, wisdom-tooth extractions and gum care handled by specialists." }
+  { icon: Tooth, title: "Check-ups & Cleaning", desc: "Routine exams, scaling and polishing that catch small issues before they become painful ones." },
+  { icon: Smile, title: "Braces & Aligners", desc: "Metal, ceramic and clear aligner options to straighten smiles at every age — with clear plans." },
+  { icon: ShieldCheck, title: "Dental Implants", desc: "Permanent, natural-looking replacements for missing teeth, planned and placed end to end." },
+  { icon: Sparkles, title: "Root Canal & Surgery", desc: "Gentle root canals, wisdom-tooth extractions and gum care handled by specialists." }
 ]
 
 const DOCTORS = [
-  { img: "/doctor-1.jpg", fallback: "/clinic-1.jpg", name: "Dr. Meera Sharma", role: "Chief Dentist · Root Canal Specialist", exp: "12+ years experience" },
-  { img: "/doctor-2.jpg", fallback: "/dentist-1.jpg", name: "Dr. Arjun Patel", role: "Orthodontist · Braces & Aligners", exp: "10+ years experience" },
-  { img: "/doctor-3.jpg", fallback: "/dentist-3.jpg", name: "Dr. Nisha Rao", role: "Pediatric Dentist · Kids' Specialist", exp: "8+ years experience" },
-  { img: "/doctor-4.jpg", fallback: "/dentist-2.jpg", name: "Dr. Vikram Singh", role: "Implantologist · Oral Surgery", exp: "14+ years experience" }
+  { img: "/doctor-1.jpg", name: "Dr. Meera Sharma", role: "Chief Dentist · Root Canal Specialist", exp: "12+ years experience" },
+  { img: "/doctor-2.jpg", name: "Dr. Arjun Patel", role: "Orthodontist · Braces & Aligners", exp: "10+ years experience" },
+  { img: "/doctor-3.jpg", name: "Dr. Nisha Rao", role: "Pediatric Dentist · Kids' Specialist", exp: "8+ years experience" },
+  { img: "/doctor-4.jpg", name: "Dr. Vikram Singh", role: "Implantologist · Oral Surgery", exp: "14+ years experience" },
+  { img: "/doctor-5.jpg", name: "Dr. Kavita Menon", role: "Endodontist · Root Canals", exp: "9+ years experience" },
+  { img: "/doctor-6.jpg", name: "Dr. Rahul Deshmukh", role: "Prosthodontist · Crowns & Bridges", exp: "11+ years experience" },
+  { img: "/doctor-7.jpg", name: "Dr. Sneha Kulkarni", role: "Periodontist · Gum Care", exp: "7+ years experience" },
+  { img: "/doctor-8.jpg", name: "Dr. Aditya Joshi", role: "Oral & Maxillofacial Surgeon", exp: "13+ years experience" }
 ]
 
 const TESTIMONIALS = [
@@ -57,50 +65,58 @@ const TESTIMONIALS = [
 ]
 
 const WHY_CHOOSE = [
-  { icon: "🏅", title: "Certified specialists", desc: "Every dentist at DentEra is a licensed specialist — from root canals to kids' dentistry — so you're always in expert hands." },
-  { icon: "😌", title: "Painless, gentle care", desc: "Numbing before every procedure, slow hands, and honest explanations. Most patients say the visit was easier than expected." },
-  { icon: "💰", title: "Transparent pricing", desc: "Written estimates before treatment starts — no hidden charges, no surprises at the counter, ever." },
-  { icon: "⏱", title: "On-time, every time", desc: "Your slot is protected. Our smart scheduling system keeps the day running so waiting rooms never become your second home." },
-  { icon: "🧼", title: "Hospital-grade hygiene", desc: "Autoclaved instruments, single-use kits, and strict cross-infection protocols in every room, every day." },
-  { icon: "👨‍👩‍👧", title: "Family-friendly clinic", desc: "Easy parking, a kids' corner, and doctors who explain things to children before touching anything." }
+  { icon: Medal, title: "Certified specialists", desc: "Every dentist at DentEra is a licensed specialist — from root canals to kids' dentistry — so you're always in expert hands." },
+  { icon: Heart, title: "Painless, gentle care", desc: "Numbing before every procedure, slow hands, and honest explanations. Most patients say the visit was easier than expected." },
+  { icon: Wallet, title: "Transparent pricing", desc: "Written estimates before treatment starts — no hidden charges, no surprises at the counter, ever." },
+  { icon: Clock, title: "On-time, every time", desc: "Your slot is protected. Our smart scheduling system keeps the day running so waiting rooms never become your second home." },
+  { icon: Droplet, title: "Hospital-grade hygiene", desc: "Autoclaved instruments, single-use kits, and strict cross-infection protocols in every room, every day." },
+  { icon: Users, title: "Family-friendly clinic", desc: "Easy parking, a kids' corner, and doctors who explain things to children before touching anything." }
 ]
 
+/* gallery = clinic photos only (rooms, reception, equipment) */
 const GALLERY_IMAGES = [
-  { src: "/dentist-1.jpg", alt: "Dentist explaining an X-ray to a patient", caption: "Clear diagnosis, together" },
-  { src: "/clinic-1.jpg", alt: "Dentist working at a bright treatment station", caption: "Focused, gentle treatment" },
-  { src: "/dentist-2.jpg", alt: "A bright, modern dental treatment room", caption: "Calm, modern operatory" },
-  { src: "/dentist-3.jpg", alt: "A clean and modern clinic interior", caption: "Designed for comfort" }
+  { src: "/clinic-7.jpg", alt: "Bright, modern dental treatment room at DentEra", caption: "Modern treatment room" },
+  { src: "/clinic-2.jpg", alt: "Dental operatory with chair and equipment", caption: "Fully equipped operatory" },
+  { src: "/clinic-3.jpg", alt: "DentEra reception and waiting area", caption: "A calm, welcoming reception" },
+  { src: "/clinic-4.jpg", alt: "Dental clinic interior with natural light", caption: "Designed for comfortable visits" },
+  { src: "/clinic-5.jpg", alt: "Clean, organised dental care unit", caption: "Sterile and spotless, always" },
+  { src: "/clinic-6.jpg", alt: "Bright clinic corridor and consultation area", caption: "Easy to find, easy to reach" }
 ]
 
 const TRUST_BADGES = [
-  { icon: "🦷", text: "Family friendly" },
-  { icon: "😌", text: "Painless treatments" },
-  { icon: "⏰", text: "On-time appointments" },
-  { icon: "🏅", text: "Certified specialists" }
+  { icon: Users, text: "Family friendly" },
+  { icon: Heart, text: "Painless treatments" },
+  { icon: Clock, text: "On-time appointments" },
+  { icon: Medal, text: "Certified specialists" }
 ]
 
 const BLOG_POSTS = [
-  { title: "5 Daily Habits That Keep Cavities Away", excerpt: "Small changes to brushing, flossing and snacking that protect your teeth between visits.", tag: "Daily Care", date: "Oct 2026" },
-  { title: "Braces or Clear Aligners — Which One Is for You?", excerpt: "A simple, honest comparison of comfort, cost, and results to help you decide.", tag: "Orthodontics", date: "Sep 2026" },
-  { title: "Your Child's First Dental Visit: A Parent's Guide", excerpt: "When to go, what to expect, and how to make the first visit a happy memory.", tag: "Kids", date: "Aug 2026" }
+  {
+    title: "5 Daily Habits That Keep Cavities Away",
+    excerpt: "Small changes to brushing, flossing and snacking that protect your teeth between visits.",
+    body: "Brush twice a day with a soft-bristled brush, floss before bedtime, rinse after meals, keep sugary snacks to mealtimes, and drink water instead of aerated drinks. Pair these with a six-monthly check-up and most cavities simply never get a chance to start.",
+    tag: "Daily Care", date: "Oct 2026"
+  },
+  {
+    title: "Braces or Clear Aligners — Which One Is for You?",
+    excerpt: "A simple, honest comparison of comfort, cost, and results to help you decide.",
+    body: "Metal braces win on complex corrections and cost, ceramic braces hide better, and clear aligners shine for comfort and appearance on mild-to-moderate crowding. The right pick depends on your bite, your budget, and how disciplined you are with wear time — our orthodontist maps all three out for you in one visit.",
+    tag: "Orthodontics", date: "Sep 2026"
+  },
+  {
+    title: "Your Child's First Dental Visit: A Parent's Guide",
+    excerpt: "When to go, what to expect, and how to make the first visit a happy memory.",
+    body: "Plan the first visit by age one, or when the first tooth shows up. Keep it short and playful — a ride on the chair, a count of the teeth, a small mirror to look at. Avoid using words like 'pain' or 'injection', and never use a dental visit as a threat. Kids who start early grow into adults who never fear the dentist.",
+    tag: "Kids", date: "Aug 2026"
+  }
 ]
 
 export default function Landing() {
   const [eraOpen, setEraOpen] = useState(false)
-  const testimonialTrack = React.useRef(null)
+  const [showAllDoctors, setShowAllDoctors] = useState(false)
+  const [openPost, setOpenPost] = useState(null)
 
-  function scrollTrack(direction) {
-    const track = testimonialTrack.current
-    if (!track) return
-    const card = track.querySelector('.testimonial-card')
-    const step = card ? card.getBoundingClientRect().width + 24 : 360
-    track.scrollBy({ left: direction * step, behavior: 'smooth' })
-  }
-
-  function onDoctorImgError(e, fallback) {
-    e.currentTarget.onerror = null
-    e.currentTarget.src = fallback
-  }
+  const visibleDoctors = showAllDoctors ? DOCTORS : DOCTORS.slice(0, 4)
 
   return (
     <div className="landing" id="top">
@@ -161,19 +177,19 @@ export default function Landing() {
           <div className="hero-visual">
             <figure className="hero-photo">
               <img
-                src="/image.jpg"
-                alt="Dentist consulting with a smiling patient at DentEra dental clinic"
+                src="/image.png"
+                alt="DentEra dental clinic — calm, modern care"
                 fetchpriority="high"
               />
             </figure>
 
             <div className="hero-float hero-float--rating">
-              <span className="hero-float-icon" aria-hidden="true">🏆</span>
+              <span className="hero-float-icon" aria-hidden="true"><Trophy size={22} /></span>
               <span className="hero-float-text"><strong>No. 1</strong><small>Rated dental clinic</small></span>
             </div>
 
             <div className="hero-float hero-float--brand">
-              <span className="hero-float-icon hero-float-icon--tooth" aria-hidden="true">🦷</span>
+              <span className="hero-float-icon hero-float-icon--tooth" aria-hidden="true"><Tooth size={22} /></span>
               <span className="hero-float-text"><strong>DentEra</strong><small>Dental care clinic</small></span>
             </div>
 
@@ -191,7 +207,7 @@ export default function Landing() {
           <div className="trust-badges">
             {TRUST_BADGES.map((badge) => (
               <span key={badge.text} className="trust-badge">
-                {badge.icon} {badge.text}
+                <badge.icon size={16} /> {badge.text}
               </span>
             ))}
           </div>
@@ -238,7 +254,7 @@ export default function Landing() {
           <div className="services-grid">
             {SERVICES.map((service, i) => (
               <Reveal as="article" key={service.title} className="service-card" delay={i * 90}>
-                <div className="service-icon">{service.icon}</div>
+                <div className="service-icon"><service.icon size={26} /></div>
                 <h3 className="service-title">{service.title}</h3>
                 <p className="service-desc">{service.desc}</p>
                 <span className="service-arrow" aria-hidden="true">
@@ -261,14 +277,13 @@ export default function Landing() {
             <Reveal as="p" className="section-sub" delay={160}>Specialists who treat you like family — the same faces at every visit.</Reveal>
           </header>
           <div className="doctors-grid">
-            {DOCTORS.map((doc, i) => (
-              <Reveal as="article" key={doc.name} className="doctor-card" delay={i * 80}>
+            {visibleDoctors.map((doc, i) => (
+              <Reveal as="article" key={doc.name} className="doctor-card" delay={(i % 4) * 80}>
                 <figure className="doctor-photo">
                   <img
                     src={doc.img}
                     alt={`${doc.name} — ${doc.role} at DentEra`}
                     loading="lazy"
-                    onError={(e) => onDoctorImgError(e, doc.fallback)}
                   />
                 </figure>
                 <h3 className="doctor-name">{doc.name}</h3>
@@ -278,12 +293,10 @@ export default function Landing() {
             ))}
           </div>
           <div className="view-all-row">
-            <a className="btn btn--line" href="#/book">
-              View All
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-                <path d="M7 17L17 7M9 7h8v8"/>
-              </svg>
-            </a>
+            <button type="button" className="btn btn--line" onClick={() => setShowAllDoctors(v => !v)} aria-expanded={showAllDoctors}>
+              {showAllDoctors ? "Show Less" : "View All"}
+              <span className={"view-all-chevron" + (showAllDoctors ? " is-open" : "")} aria-hidden="true"><ChevronDown size={15} /></span>
+            </button>
           </div>
         </div>
       </section>
@@ -299,7 +312,7 @@ export default function Landing() {
           <div className="benefits-grid">
             {WHY_CHOOSE.map((item, i) => (
               <Reveal as="article" key={item.title} className="benefit-card" delay={i * 70}>
-                <div className="benefit-icon">{item.icon}</div>
+                <div className="benefit-icon"><item.icon size={24} /></div>
                 <h3 className="benefit-title">{item.title}</h3>
                 <p className="benefit-desc">{item.desc}</p>
               </Reveal>
@@ -308,7 +321,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — a continuous, circular auto-scroll of patient reviews */}
       <section className="testimonials" id="testimonials" aria-labelledby="testimonials-title">
         <div className="container">
           <header className="section-header section-header--center">
@@ -316,39 +329,36 @@ export default function Landing() {
             <Reveal as="h2" id="testimonials-title" delay={80}>What People Say About <em className="serif-accent">Us</em></Reveal>
           </header>
 
-          <div className="testimonials-grid" ref={testimonialTrack}>
-            {TESTIMONIALS.map((testimonial, i) => (
-              <Reveal as="article" key={testimonial.author} className="testimonial-card" delay={i * 90}>
-                <div className="testimonial-mark" aria-hidden="true">“</div>
-                <div className="testimonial-quote">{testimonial.quote}</div>
-                <div className="testimonial-author">
-                  <div className="author-avatar">
-                    {testimonial.photo
-                      ? <img src={testimonial.photo} alt="" loading="lazy" />
-                      : testimonial.author[0]}
-                  </div>
-                  <div className="author-info">
-                    <div className="author-name">{testimonial.author}</div>
-                    <div className="author-role">{testimonial.role}</div>
-                  </div>
+          <div className="testimonials-marquee" aria-label="Patient reviews carousel">
+            <div className="testimonials-track">
+              {[0, 1].map(copy => (
+                <div className="testimonials-set" key={copy} aria-hidden={copy === 1 ? "true" : undefined}>
+                  {TESTIMONIALS.map((testimonial, i) => (
+                    <article key={`${copy}-${testimonial.author}`} className="testimonial-card">
+                      <div className="testimonial-quote">{testimonial.quote}</div>
+                      <div className="testimonial-author">
+                        <div className="author-avatar">
+                          {testimonial.photo
+                            ? <img src={testimonial.photo} alt="" loading="lazy" />
+                            : testimonial.author[0]}
+                        </div>
+                        <div className="author-info">
+                          <div className="author-name">{testimonial.author}</div>
+                          <div className="author-role">{testimonial.role}</div>
+                        </div>
+                      </div>
+                      <div className="testimonial-date">{testimonial.date}</div>
+                    </article>
+                  ))}
                 </div>
-                <div className="testimonial-date">{testimonial.date}</div>
-              </Reveal>
-            ))}
+              ))}
+            </div>
           </div>
-
-          <div className="slider-nav">
-            <button type="button" className="slider-btn slider-btn--fill" aria-label="Previous testimonials" onClick={() => scrollTrack(-1)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <button type="button" className="slider-btn" aria-label="Next testimonials" onClick={() => scrollTrack(1)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
+          <p className="testimonials-hint">Reviews keep rolling — hover to pause and read.</p>
         </div>
       </section>
 
-      {/* Gallery Section */}
+      {/* Gallery Section — clinic photos only */}
       <section className="gallery-section" id="gallery" aria-labelledby="gallery-title">
         <div className="container">
           <header className="section-header section-header--center">
@@ -357,11 +367,6 @@ export default function Landing() {
             <Reveal as="p" className="section-sub" delay={160}>Clean rooms, modern equipment, and a team that loves what it does.</Reveal>
           </header>
 
-          <nav className="gallery-subnav" aria-label="Gallery navigation">
-            <a href="#gallery-images" className="gallery-tab">Images</a>
-            <a href="#gallery-videos" className="gallery-tab">Videos</a>
-          </nav>
-
           <div id="gallery-images" className="gallery-images">
             {GALLERY_IMAGES.map((image, i) => (
               <Reveal as="figure" key={image.src} className="gallery-photo" delay={i * 80}>
@@ -369,10 +374,6 @@ export default function Landing() {
                 <figcaption>{image.caption}</figcaption>
               </Reveal>
             ))}
-          </div>
-
-          <div id="gallery-videos" className="gallery-videos">
-            <p className="gallery-empty">No clinic videos yet — check back soon!</p>
           </div>
         </div>
       </section>
@@ -391,7 +392,10 @@ export default function Landing() {
                 <div className="blog-meta"><span className="blog-tag">{post.tag}</span><span className="blog-date">{post.date}</span></div>
                 <h3 className="blog-title">{post.title}</h3>
                 <p className="blog-excerpt">{post.excerpt}</p>
-                <a className="blog-link" href="#/book">Read more →</a>
+                {openPost === i && <p className="blog-body">{post.body}</p>}
+                <button type="button" className="blog-link" onClick={() => setOpenPost(openPost === i ? null : i)} aria-expanded={openPost === i}>
+                  {openPost === i ? "Show less" : "Read more"}
+                </button>
               </Reveal>
             ))}
           </div>
@@ -411,7 +415,7 @@ export default function Landing() {
             <div className="contact-info">
               <Reveal as="div" delay={80}>
                 <div className="contact-info-block">
-                  <span className="contact-info-icon" aria-hidden="true">📍</span>
+                  <span className="contact-info-icon" aria-hidden="true"><MapPin size={22} /></span>
                   <div>
                     <h3 className="contact-info-title">Visit us</h3>
                     <p className="contact-info-item">DentEra Dental Clinic<br />2nd Floor, Smile Plaza, MG Road<br />Bengaluru 560001</p>
@@ -420,7 +424,7 @@ export default function Landing() {
               </Reveal>
               <Reveal as="div" delay={160}>
                 <div className="contact-info-block">
-                  <span className="contact-info-icon" aria-hidden="true">📞</span>
+                  <span className="contact-info-icon" aria-hidden="true"><Phone size={22} /></span>
                   <div>
                     <h3 className="contact-info-title">Call us</h3>
                     <p className="contact-info-item"><a href="tel:+919876543210">+91 98765 43210</a></p>
@@ -429,7 +433,7 @@ export default function Landing() {
               </Reveal>
               <Reveal as="div" delay={240}>
                 <div className="contact-info-block">
-                  <span className="contact-info-icon" aria-hidden="true">✉️</span>
+                  <span className="contact-info-icon" aria-hidden="true"><Mail size={22} /></span>
                   <div>
                     <h3 className="contact-info-title">Email us</h3>
                     <p className="contact-info-item"><a href="mailto:hello@dentera.clinic">hello@dentera.clinic</a></p>
@@ -468,7 +472,7 @@ export default function Landing() {
             </div>
             <nav className="footer-nav">
               <h4>For patients</h4>
-              <a href="#/book">Book an appointment</a>
+              <a href="#top">Book an appointment</a>
               <a href="#Services">Our services</a>
               <a href="#doctors">Our doctors</a>
               <a href="#blog">Blog</a>
@@ -482,7 +486,7 @@ export default function Landing() {
           </div>
           <div className="footer-bottom">
             <p>© 2026 DentEra Dental Clinic. All rights reserved.</p>
-            <p>🦷 DentEra — gentle care for every smile</p>
+            <p>DentEra — gentle care for every smile</p>
           </div>
         </div>
       </footer>

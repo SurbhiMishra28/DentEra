@@ -1,11 +1,21 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import DentEraMark from '../components/DentEraMark.jsx'
+import {
+  Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
+  Search, MessageCircle, Shield, AlertTriangle, Sparkles, ChevronRight, CalendarCheck, Users, Wallet,
+  Calendar, ClipboardList, Stethoscope,
+} from '../components/Icons.jsx'
 import '../dashboard.css'
 
+const pad = n => String(n).padStart(2, '0')
 const fmt12 = t => { const [h, m] = (t || '').split(':').map(Number); if (Number.isNaN(h)) return t || ''
   const ap = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ap}` }
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+const addMin = (t, m) => { const [h, mm] = String(t || '09:00').split(':').map(Number)
+  const tot = (h * 60 + mm) + (+m || 30); return `${pad(Math.floor(tot / 60) % 24)}:${pad(tot % 60)}` }
+const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+const today = () => isoOf(new Date())
+const tomorrow = () => { const d = new Date(); d.setDate(d.getDate() + 1); return isoOf(d) }
 const prettyDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return iso
   return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }) }
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
@@ -22,9 +32,14 @@ export default function Dashboard({ me, onChat, onLogout }) {
   const [msg, setMsg] = useState('')
   const [activeSection, setActiveSection] = useState('overview')
 
-  // add-appointment / add-patient forms
+  // booking studio state
   const [bookOpen, setBookOpen] = useState(false)
   const [book, setBook] = useState({ patient_id: '', patient_name: '', date: today(), time: '10:00', minutes: 30, reason: 'Consultation' })
+  const [bookErr, setBookErr] = useState('')
+  const [slots, setSlots] = useState(null)          // undefined = loading, null = fall back to manual time
+  const [treatments, setTreatments] = useState([])
+  const slotsSeq = useRef(0)
+
   const [addOpen, setAddOpen] = useState(false)
   const [addPatient, setAddPatient] = useState({ name: '', phone: '', dob: '', gender: '', medical_notes: '' })
 
@@ -43,14 +58,39 @@ export default function Dashboard({ me, onChat, onLogout }) {
     return () => { live = false; clearInterval(t) }
   }, [date, q]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // treatment catalogue powers the reason quick-picks (duration auto-syncs per treatment)
+  useEffect(() => {
+    if (me.role !== 'dentist') return
+    let live = true
+    api.get('/api/treatments').then(({ data }) => { if (live) setTreatments(data.data || []) }).catch(() => {})
+    return () => { live = false }
+  }, [me.role])
+
+  // free slots for the booking form — fetched live while the form is open (race-guarded)
+  useEffect(() => {
+    if (!bookOpen || me.role !== 'dentist') return
+    const seq = ++slotsSeq.current
+    let live = true
+    setSlots(undefined)
+    api.get(`/api/slots?date=${book.date}`).then(({ status, data }) => {
+      if (live && seq === slotsSeq.current) setSlots(status === 200 ? (data.data || []) : null)
+    }).catch(() => { if (live && seq === slotsSeq.current) setSlots(null) })
+    return () => { live = false }
+  }, [bookOpen, book.date, me.role])
+
   async function logout() { await api.post('/api/auth/logout'); onLogout(); location.hash = '#/' }
 
   const allInvoices = invoices
   const due = allInvoices.reduce((s, i) => s + (i.amount - i.discount - i.paid_amount), 0)
+  const doneToday = appts.filter(a => a.status === 'completed').length
+  const apptPct = appts.length ? Math.round((doneToday / appts.length) * 100) : 0
+  const dueGross = allInvoices.reduce((s, i) => s + (i.amount - i.discount), 0)
+  const paidPct = dueGross ? Math.min(100, Math.round((dueGross - due) / dueGross * 100)) : 100
+
   const pageCopy = {
     overview: {
       eyebrow: 'CLINIC OVERVIEW',
-      title: `${greet()}, ${me.name.replace(/^Dr\.?\s*/i, 'Dr. ')} 👋`,
+      title: `${greet()}, ${me.name.replace(/^Dr\.?\s*/i, 'Dr. ')}`,
       description: `${prettyDate(date)} — here's your clinic today.`
     },
     appointments: {
@@ -70,14 +110,30 @@ export default function Dashboard({ me, onChat, onLogout }) {
     }
   }[activeSection]
 
+  function toggleBook() {
+    if (bookOpen) return setBookOpen(false)
+    setBookErr(''); setBook(b => ({ ...b, date })); setBookOpen(true)
+  }
+  function toggleAdd() {
+    if (addOpen) return setAddOpen(false)
+    setMsg(''); setAddOpen(true)
+  }
+
   async function bookAppt(e) {
-    e.preventDefault(); setMsg('')
+    e.preventDefault(); setBookErr('')
+    // FIX: the chosen duration is now honoured — end_time is computed and sent (was always 30 min)
+    const end_time = addMin(book.time, +book.minutes)
     const body = book.patient_id
-      ? { patient_id: +book.patient_id, date: book.date, start_time: book.time, end_time: null, reason: book.reason }
-      : { patient_name: book.patient_name, date: book.date, start_time: book.time, end_time: null, reason: book.reason }
+      ? { patient_id: +book.patient_id, date: book.date, start_time: book.time, end_time, reason: book.reason }
+      : { patient_name: book.patient_name, date: book.date, start_time: book.time, end_time, reason: book.reason }
     const { status, data } = await api.post('/api/appointments', body)
-    if (status === 201) { setMsg('Appointment booked.'); setBookOpen(false); load() }
-    else setMsg(data.message || 'Could not book — please try another time.')
+    if (status === 201) {
+      const who = book.patient_id
+        ? ((patients.find(p => p.id === +book.patient_id) || {}).name || 'the patient')
+        : (book.patient_name || 'the patient')
+      setMsg(`Booked ${who} at ${fmt12(book.time)} on ${prettyDate(book.date)} — the slot is protected.`)
+      setBookOpen(false); load()
+    } else setBookErr(data.message || 'Could not book — please try another time.')
   }
 
   async function setStatus(id, status) {
@@ -115,6 +171,12 @@ export default function Dashboard({ me, onChat, onLogout }) {
     load()
   }
 
+  const isDentist = me.role === 'dentist'
+  const walkInMode = !book.patient_id
+  const bookedPatient = book.patient_id ? patients.find(p => p.id === +book.patient_id) : null
+  const ticketName = bookedPatient ? bookedPatient.name : (book.patient_name || '')
+  const ticketEnd = addMin(book.time, +book.minutes)
+
   return (
     <div className="view dashboard-page">
       <aside className="dashboard-sidebar" aria-label="Clinic navigation">
@@ -123,13 +185,13 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <span>DentEra<small>CLINIC WORKSPACE</small></span>
         </a>
         <nav className="dashboard-nav" aria-label="Dashboard sections">
-          <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => setActiveSection('overview')}><span aria-hidden="true">⌂</span>Overview</button>
-          <button type="button" className={activeSection === 'appointments' ? 'is-active' : ''} aria-current={activeSection === 'appointments' ? 'page' : undefined} onClick={() => setActiveSection('appointments')}><span aria-hidden="true">▦</span>Appointments</button>
-          <button type="button" className={activeSection === 'patients' ? 'is-active' : ''} aria-current={activeSection === 'patients' ? 'page' : undefined} onClick={() => setActiveSection('patients')}><span aria-hidden="true">♙</span>Patients</button>
-          <button type="button" className={activeSection === 'billing' ? 'is-active' : ''} aria-current={activeSection === 'billing' ? 'page' : undefined} onClick={() => setActiveSection('billing')}><span aria-hidden="true">₹</span>Billing</button>
+          <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => setActiveSection('overview')}><span aria-hidden="true"><Home size={17} /></span>Overview</button>
+          <button type="button" className={activeSection === 'appointments' ? 'is-active' : ''} aria-current={activeSection === 'appointments' ? 'page' : undefined} onClick={() => setActiveSection('appointments')}><span aria-hidden="true"><LayoutGrid size={17} /></span>Appointments</button>
+          <button type="button" className={activeSection === 'patients' ? 'is-active' : ''} aria-current={activeSection === 'patients' ? 'page' : undefined} onClick={() => setActiveSection('patients')}><span aria-hidden="true"><UserRound size={17} /></span>Patients</button>
+          <button type="button" className={activeSection === 'billing' ? 'is-active' : ''} aria-current={activeSection === 'billing' ? 'page' : undefined} onClick={() => setActiveSection('billing')}><span aria-hidden="true"><IndianRupee size={17} /></span>Billing</button>
         </nav>
         <div className="dashboard-sidebar-note">
-          <span className="dashboard-sidebar-note__icon" aria-hidden="true">✦</span>
+          <span className="dashboard-sidebar-note__icon" aria-hidden="true"><Sparkles size={15} /></span>
           <div><b>Your clinic, connected.</b><span>Appointments, records and billing in one place.</span></div>
         </div>
       </aside>
@@ -141,9 +203,9 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <span className="doctor-identity__text"><b>{me.name}</b><small>{me.role}{me.dentistId ? ` · dentist #${me.dentistId}` : ''}</small></span>
         </span>
         <span className="spacer" />
-        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin">🛡️ Admin panel</a>}
+        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin"><Shield size={14} /> Admin panel</a>}
         <a className="mini" href="#/book">Public booking</a>
-        {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}>💬 Ask Era</button>}
+        {isDentist && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
         <button className="mini" onClick={logout}>Sign out</button>
       </div>
 
@@ -153,64 +215,156 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <h1>{pageCopy.title}</h1>
           <p className="muted">{pageCopy.description}</p>
         </div>
-        <div className="dashboard-actions">
-          {(activeSection === 'overview' || activeSection === 'patients') && <button className="btn btn--ghost" onClick={() => setAddOpen(v => !v)}>＋ Add patient</button>}
-          {(activeSection === 'overview' || activeSection === 'appointments') && <button className="btn" onClick={() => setBookOpen(v => !v)}>＋ New appointment</button>}
-        </div>
+        {isDentist && <div className="dashboard-actions">
+          {(activeSection === 'overview' || activeSection === 'patients') && <button className="btn btn--ghost" onClick={toggleAdd}><Plus size={15} /> Add patient</button>}
+          {(activeSection === 'overview' || activeSection === 'appointments') && <button className="btn dash-cta-btn" onClick={toggleBook}><CalendarCheck size={15} /> New appointment</button>}
+        </div>}
       </div>
 
       {msg && <p className="authmsg ok" role="status" aria-live="polite">{msg}</p>}
 
       {activeSection === 'overview' && <div className="stats">
         <div className="stat">
-          <span className="stat-icon" aria-hidden="true">▦</span>
+          <span className="stat-icon" aria-hidden="true"><CalendarCheck size={19} /></span>
           <span className="statlabel">APPOINTMENTS · {date === today() ? 'TODAY' : 'SELECTED DAY'}</span>
           <span className="statnum">{appts.length}</span>
-          <span className="stat-foot">{date === today() ? 'Scheduled for today' : prettyDate(date)}</span>
+          <span className="stat-foot">
+            {appts.length ? `${doneToday} completed · ${appts.length - doneToday} to go` : (date === today() ? 'Scheduled for today' : prettyDate(date))}
+            <i className="stat-bar" aria-hidden="true"><b style={{ width: `${apptPct}%` }} /></i>
+          </span>
         </div>
         <div className="stat">
-          <span className="stat-icon" aria-hidden="true">♙</span>
+          <span className="stat-icon" aria-hidden="true"><Users size={19} /></span>
           <span className="statlabel">PATIENTS IN REGISTER</span>
           <span className="statnum">{patientTotal}</span>
           <span className="stat-foot">Across your clinic</span>
         </div>
         <div className={'stat' + (invoices.length ? ' warn' : '')}>
-          <span className="stat-icon" aria-hidden="true">₹</span>
+          <span className="stat-icon" aria-hidden="true"><Wallet size={19} /></span>
           <span className="statlabel">OUTSTANDING BALANCE</span>
           <span className="statnum">{money(due)}</span>
-          <span className="stat-foot">{invoices.length} unpaid invoice{invoices.length === 1 ? '' : 's'}</span>
+          <span className="stat-foot">
+            {invoices.length} unpaid invoice{invoices.length === 1 ? '' : 's'} · {paidPct}% collected
+            <i className="stat-bar" aria-hidden="true"><b style={{ width: `${paidPct}%` }} /></i>
+          </span>
         </div>
       </div>}
 
-      {bookOpen && (activeSection === 'overview' || activeSection === 'appointments') && (
-        <form className="panel rowForm" onSubmit={bookAppt} aria-label="Book an appointment">
-          <h3>Book appointment {book.date ? `on ${prettyDate(book.date)}` : ''}</h3>
-          <div className="rowForm grid3">
-            {!book.patient_id && (
-              <label>Walk-in name <input value={book.patient_name} onChange={e => setBook({ ...book, patient_name: e.target.value })} placeholder="e.g. Ravi Kumar" required /></label>
-            )}
-            <label>Registered patient
-              <select value={book.patient_id} onChange={e => setBook({ ...book, patient_id: e.target.value })}>
-                <option value="">— walk-in (type a name) —</option>
-                {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </label>
-            <label>Date <input type="date" value={book.date} onChange={e => setBook({ ...book, date: e.target.value })} required /></label>
-            <label>Start time <input type="time" value={book.time} onChange={e => setBook({ ...book, time: e.target.value })} required /></label>
-            <label>Minutes
-              <select value={book.minutes} onChange={e => setBook({ ...book, minutes: e.target.value })}>
-                {[15, 30, 45, 60].map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </label>
-            <label>Reason <input value={book.reason} onChange={e => setBook({ ...book, reason: e.target.value })} /></label>
+      {bookOpen && (activeSection === 'overview' || activeSection === 'appointments') && isDentist && (
+        <form className="dash-book" onSubmit={bookAppt} aria-label="Book an appointment">
+          <div className="dash-book__banner">
+            <span className="dash-book__banner-icon" aria-hidden="true"><CalendarCheck size={26} /></span>
+            <div>
+              <h3>Book an appointment</h3>
+              <p>{prettyDate(book.date)} · pick a free slot — overlaps are refused automatically.</p>
+            </div>
           </div>
-          <button type="submit">Book it</button>
+
+          <div className="dash-book__cols">
+            <div className="dash-book__steps">
+              <section className="dash-book__sec">
+                <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">1</span><h4>Patient</h4></div>
+                <div className="seg" role="group" aria-label="Patient type">
+                  <button type="button" className={walkInMode ? 'seg__btn is-on' : 'seg__btn'} aria-pressed={walkInMode} onClick={() => setBook(b => ({ ...b, patient_id: '' }))}>Walk-in</button>
+                  <button type="button" className={!walkInMode ? 'seg__btn is-on' : 'seg__btn'} aria-pressed={!walkInMode} disabled={!patients.length}
+                    onClick={() => setBook(b => ({ ...b, patient_id: b.patient_id || (patients[0] ? String(patients[0].id) : '') }))}>Registered{!patients.length ? ' · none' : ''}</button>
+                </div>
+                {walkInMode ? (
+                  <label className="dash-book__field">Walk-in name
+                    <input value={book.patient_name} onChange={e => setBook({ ...book, patient_name: e.target.value })} placeholder="e.g. Ravi Kumar" required />
+                  </label>
+                ) : (
+                  <label className="dash-book__field">Registered patient
+                    <select value={book.patient_id} onChange={e => setBook({ ...book, patient_id: e.target.value })} required>
+                      {patients.map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` · ${p.phone}` : ''}</option>)}
+                    </select>
+                  </label>
+                )}
+              </section>
+
+              <section className="dash-book__sec">
+                <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">2</span><h4>Day & time</h4><small>your working hours only</small></div>
+                <div className="daychips">
+                  <button type="button" className={book.date === today() ? 'daychip is-on' : 'daychip'} onClick={() => setBook(b => ({ ...b, date: today() }))}>Today</button>
+                  <button type="button" className={book.date === tomorrow() ? 'daychip is-on' : 'daychip'} onClick={() => setBook(b => ({ ...b, date: tomorrow() }))}>Tomorrow</button>
+                  <input type="date" value={book.date} onChange={e => setBook({ ...book, date: e.target.value })} required aria-label="Pick a date" />
+                </div>
+
+                {slots === undefined && (
+                  <div className="slotgrid" aria-hidden="true">{Array.from({ length: 8 }).map((_, i) => <span key={i} className="slotchip slotchip--skeleton" />)}</div>
+                )}
+                {Array.isArray(slots) && slots.length > 0 && (<>
+                  <p className="slotnote">{slots.length} free slot{slots.length === 1 ? '' : 's'} on {prettyDate(book.date)}</p>
+                  <div className="slotgrid">
+                    {slots.map(s => (
+                      <button key={s.time} type="button" className={book.time === s.time ? 'slotchip is-on' : 'slotchip'} onClick={() => setBook(b => ({ ...b, time: s.time }))}>{fmt12(s.time)}</button>
+                    ))}
+                  </div>
+                </>)}
+                {Array.isArray(slots) && slots.length === 0 && (
+                  <p className="slotempty">Fully booked or a day off — pick another day, or type a custom time below.</p>
+                )}
+                <label className="dash-book__custom">Custom start time
+                  <input type="time" value={book.time} onChange={e => setBook({ ...book, time: e.target.value })} required />
+                </label>
+              </section>
+
+              <section className="dash-book__sec">
+                <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">3</span><h4>Visit</h4><small>duration & reason</small></div>
+                <div className="durchips" role="group" aria-label="Duration">
+                  {[15, 30, 45, 60].map(m => (
+                    <button key={m} type="button" className={+book.minutes === m ? 'durchip is-on' : 'durchip'} onClick={() => setBook(b => ({ ...b, minutes: m }))}>{m} min</button>
+                  ))}
+                </div>
+                <label className="dash-book__field">Reason
+                  <input value={book.reason} onChange={e => setBook({ ...book, reason: e.target.value })} placeholder="e.g. Consultation" />
+                </label>
+                {treatments.length > 0 && (
+                  <div className="reasonchips" aria-label="Quick reasons">
+                    {treatments.slice(0, 8).map(t => (
+                      <button key={t.id} type="button" className={book.reason === t.name ? 'reasonchip is-on' : 'reasonchip'}
+                        title={`Typically ${t.default_minutes} min`}
+                        onClick={() => setBook(b => ({ ...b, reason: t.name, minutes: t.default_minutes || b.minutes }))}>{t.name}</button>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {bookErr && <p className="dash-book__err" role="alert"><AlertTriangle size={15} /> {bookErr}</p>}
+            </div>
+
+            <aside className="dash-book__ticket">
+              <span className="dash-book__ticket-eyebrow">APPOINTMENT PREVIEW</span>
+              <div className="dash-ticket-card">
+                <div className="dash-ticket-pat">
+                  <span className="avatar" aria-hidden="true">{initial(ticketName)}</span>
+                  <div>
+                    <small>{walkInMode ? 'Walk-in' : 'Registered'}</small>
+                    <b>{ticketName || '— add a name —'}</b>
+                  </div>
+                </div>
+                <div className="dash-ticket-rows">
+                  <span className="dash-ticket-row"><Calendar size={15} /> {prettyDate(book.date)} <small>day</small></span>
+                  <span className="dash-ticket-row"><Clock size={15} /> {fmt12(book.time)} – {fmt12(ticketEnd)} <small>{book.minutes} min</small></span>
+                  <span className="dash-ticket-row"><ClipboardList size={15} /> <span className="dash-ticket-reason">{book.reason || 'Consultation'}</span> <small>reason</small></span>
+                </div>
+              </div>
+              <button type="submit" className="dash-book__cta"><CalendarCheck size={17} /> Confirm appointment</button>
+              <button type="button" className="dash-book__ghost" onClick={() => setBookOpen(false)}>Discard</button>
+            </aside>
+          </div>
         </form>
       )}
 
-      {addOpen && (activeSection === 'overview' || activeSection === 'patients') && (
-        <form className="panel rowForm" onSubmit={addNewPatient} aria-label="Add patient">
-          <h3>Add patient</h3>
+      {addOpen && (activeSection === 'overview' || activeSection === 'patients') && isDentist && (
+        <form className="panel rowForm dash-form" onSubmit={addNewPatient} aria-label="Add patient">
+          <div className="dash-form-head">
+            <span className="dash-form-icon" aria-hidden="true"><UserRound size={20} /></span>
+            <div>
+              <h3>Add patient</h3>
+              <p>New faces take less than a minute to register.</p>
+            </div>
+          </div>
           <div className="rowForm grid3">
             <label>Name <input value={addPatient.name} onChange={e => setAddPatient({ ...addPatient, name: e.target.value })} required /></label>
             <label>Phone <input value={addPatient.phone} onChange={e => setAddPatient({ ...addPatient, phone: e.target.value })} placeholder="+91…" /></label>
@@ -222,7 +376,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
             </label>
             <label className="wide">Medical notes / allergies <input value={addPatient.medical_notes} onChange={e => setAddPatient({ ...addPatient, medical_notes: e.target.value })} placeholder="e.g. Allergic to penicillin" /></label>
           </div>
-          <button type="submit">Save patient</button>
+          <div className="dash-form-foot">
+            <button type="submit" className="dash-form-submit"><Check size={16} /> Save patient</button>
+            <button type="button" className="dash-form-cancel" onClick={() => setAddOpen(false)}>Cancel</button>
+          </div>
         </form>
       )}
 
@@ -232,23 +389,23 @@ export default function Dashboard({ me, onChat, onLogout }) {
             <div><span className="panel-eyebrow">YOUR SCHEDULE</span><h3>Appointments</h3></div>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Appointment date" />
           </div>
-          {appts.length === 0 && <p className="empty">No appointments this day — enjoy the quiet. ☕</p>}
-          <ul className="list">
+          {appts.length === 0 && <p className="empty"><CalendarCheck size={22} /> No appointments this day — enjoy the quiet.</p>}
+          <ul className="list apptlist">
             {appts.map(a => (
               <li key={a.id} className="appt">
-                <span className="timechip">{fmt12(a.start_time)}<br /><small>{fmt12(a.end_time)}</small></span>
+                <span className="timechip">{fmt12(a.start_time)}<small>{fmt12(a.end_time)}</small></span>
                 <span className="apptbody">
                   <b>{a.patient_name || 'Walk-in'}</b>
                   {a.source === 'public' && <span className="badge">public</span>}
                   <span className="muted"> — {a.reason || 'Consultation'}</span>
                   <span className="rowgap">
-                    {a.status === 'scheduled' && <button type="button" className="mini" onClick={() => setStatus(a.id, 'completed')}>✓ complete</button>}
-                    {a.status === 'scheduled' && <button type="button" className="mini" onClick={() => setStatus(a.id, 'no_show')}>◐ no-show</button>}
-                    {a.status === 'scheduled' && <button type="button" className="mini" onClick={() => cancelAppt(a.id)}>✕ cancel</button>}
-                    {a.status !== 'scheduled' && <button type="button" className="mini" onClick={() => setStatus(a.id, 'scheduled')}>↺ reopen</button>}
+                    {a.status === 'scheduled' && <button type="button" className="mini mini--ok" onClick={() => setStatus(a.id, 'completed')}><Check size={13} /> complete</button>}
+                    {a.status === 'scheduled' && <button type="button" className="mini mini--warn" onClick={() => setStatus(a.id, 'no_show')}><Clock size={13} /> no-show</button>}
+                    {a.status === 'scheduled' && <button type="button" className="mini mini--danger" onClick={() => cancelAppt(a.id)}><XMark size={13} /> cancel</button>}
+                    {a.status !== 'scheduled' && <button type="button" className="mini" onClick={() => setStatus(a.id, 'scheduled')}><RotateCcw size={13} /> reopen</button>}
                   </span>
                 </span>
-                <span className={'stchip st-' + a.status}>{a.status}</span>
+                <span className={'stchip st-' + a.status}>{a.status.replace('_', ' ')}</span>
               </li>
             ))}
           </ul>
@@ -257,20 +414,20 @@ export default function Dashboard({ me, onChat, onLogout }) {
         {(activeSection === 'overview' || activeSection === 'patients') && <section className="panel" id="patients">
           <div className="panelhead"><div><span className="panel-eyebrow">YOUR CLINIC</span><h3>Patient register</h3></div><span className="panel-count">{patientTotal}</span></div>
           <label className="patient-search">
-            <span aria-hidden="true">⌕</span>
+            <span aria-hidden="true"><Search size={16} /></span>
             <input placeholder="Search name or phone…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search patients" />
           </label>
-          {patients.length === 0 && <p className="empty">No patients match “{q}”.</p>}
+          {patients.length === 0 && <p className="empty"><Stethoscope size={22} /> No patients match "{q}".</p>}
           <ul className="list">
             {patients.map(p => (
               <li key={p.id} className="ptrow">
                 <span className="avatar" aria-hidden="true">{initial(p.name)}</span>
                 <span className="apptbody">
                   <a href={`#/patients/${p.id}`}><b>{p.name}</b></a>
-                  {p.medical_notes && <span className="warn" title={p.medical_notes}> ⚠️</span>}
+                  {p.medical_notes && <span className="warn" title={p.medical_notes}><AlertTriangle size={13} /></span>}
                   <span className="muted"> {p.phone || ''}</span>
                 </span>
-                <a className="chev" href={`#/patients/${p.id}`} aria-label={`Open ${p.name}`}>›</a>
+                <a className="chev" href={`#/patients/${p.id}`} aria-label={`Open ${p.name}`}><ChevronRight size={16} /></a>
               </li>
             ))}
           </ul>
@@ -282,7 +439,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <div><span className="panel-eyebrow">PAYMENTS TO FOLLOW UP</span><h3>Unpaid invoices</h3></div>
           <span className="billing-total">{money(due)} <small>outstanding</small></span>
         </div>
-        {invoices.length === 0 && <p className="empty">All invoices are settled. 🎉</p>}
+        {invoices.length === 0 && <p className="empty"><IndianRupee size={22} /> All invoices are settled.</p>}
         <ul className="list">
           {invoices.map(i => (
             <li key={i.id} className="invrow">
@@ -290,8 +447,8 @@ export default function Dashboard({ me, onChat, onLogout }) {
               <span className="rowgap">
                 <a className="mini" href={`#/patients/${i.patient_id}`}>patient</a>
                 <a className="mini" href={`#/plans/${i.plan_id || ''}`} style={i.plan_id ? null : { visibility: 'hidden' }}>plan</a>
-                <button className="mini" onClick={() => pay(i.id, true)}>mark fully paid</button>
-                <button className="mini" onClick={() => pay(i.id, false)}>half payment</button>
+                <button className="mini mini--ok" onClick={() => pay(i.id, true)}><Check size={13} /> mark fully paid</button>
+                <button className="mini mini--warn" onClick={() => pay(i.id, false)}>half payment</button>
               </span>
             </li>
           ))}

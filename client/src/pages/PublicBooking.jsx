@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
+import { Tooth, Sparkles, Check, Calendar, Clock, Lock, ChevronRight } from '../components/Icons.jsx'
 
 // Public booking — a full page (not a cramped card): progress rail, dentist cards,
 // roomy date/slot grids, then a summary + details. API contract unchanged.
@@ -56,7 +57,7 @@ export default function PublicBooking() {
     <div className="bookview">
       <div className="topbar">
         <a className="mini" href="#/">← Home</a>
-        <span className="brand">🦷 DentEra</span>
+        <span className="brand"><Tooth size={20} /> DentEra</span>
         <span className="spacer" />
         <a className="mini" href="#/login">Doctor sign in</a>
       </div>
@@ -64,7 +65,7 @@ export default function PublicBooking() {
       {done ? (
         <div className="bookmain">
           <div className="panel center donecard">
-            <div className="logo">🎉</div>
+            <div className="logo"><Sparkles size={34} /></div>
             <h2>Booked!</h2>
             <p className="donebig">See you <b>{done.date === plusDays(1) ? 'tomorrow' : niceLong(done.date)}</b> at <b>{fmt12(done.time)}</b>, {done.name}.</p>
             <p className="muted">A confirmation call will follow. Need to change plans? Just call the clinic.</p>
@@ -84,7 +85,7 @@ export default function PublicBooking() {
           <ol className="prosteps" aria-label="Booking steps">
             {STEPS.map((s, i) => (
               <li key={s} className={step > i + 1 ? 'done' : step === i + 1 ? 'on' : ''}>
-                <span className="pronum">{step > i + 1 ? '✓' : i + 1}</span>
+                <span className="pronum">{step > i + 1 ? <Check size={13} /> : i + 1}</span>
                 <span className="proname">{s}</span>
               </li>
             ))}
@@ -102,7 +103,7 @@ export default function PublicBooking() {
                         <b>{d.name}</b>
                         <span className="muted">{d.spec} · {d.room}</span>
                       </span>
-                      <span className="chev">›</span>
+                      <span className="chev"><ChevronRight size={16} /></span>
                     </button>
                   ))}
                 </div>
@@ -151,9 +152,9 @@ export default function PublicBooking() {
               <>
                 <h3>Almost done — your details</h3>
                 <div className="sumcard">
-                  <span>🦷 <b>{dentist.name}</b> · {dentist.spec}</span>
-                  <span>📅 <b>{dateLabel(date)}</b> ({niceLong(date)})</span>
-                  <span>🕒 <b>{fmt12(slot)}</b></span>
+                  <span><Tooth size={15} /> <b>{dentist.name}</b> · {dentist.spec}</span>
+                  <span><Calendar size={15} /> <b>{dateLabel(date)}</b> ({niceLong(date)})</span>
+                  <span><Clock size={15} /> <b>{fmt12(slot)}</b></span>
                 </div>
                 <form onSubmit={submit} className="bookform">
                   <label>Your name<input name="name" placeholder="e.g. Ravi Kumar" required minLength={2} /></label>
@@ -169,7 +170,7 @@ export default function PublicBooking() {
             {err && <p className="err">{err}</p>}
           </section>
 
-          <p className="tiny footnote">🔒 Your details stay private — used only for this appointment.</p>
+          <p className="tiny footnote"><Lock size={13} /> Your details stay private — used only for this appointment.</p>
         </div>
       )}
     </div>

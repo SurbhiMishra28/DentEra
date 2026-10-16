@@ -3136,6 +3136,33 @@
   color: #fff;
 }
 
+/* ==========================================================================
+   why-choose: pastel cards matching the coloured service cards above
+   ========================================================================== */
+.landing .benefit-card {
+  border: 0;
+  border-radius: 22px;
+  background: #e9f3fe;
+  box-shadow: none;
+  transition: translate 220ms ease, box-shadow 220ms ease;
+}
+
+.landing .benefit-card:hover {
+  box-shadow: 0 18px 40px rgba(24, 81, 102, 0.12);
+}
+
+.landing .benefit-card:nth-child(6n + 1) { background: #e9f3fe; }
+.landing .benefit-card:nth-child(6n + 2) { background: #fdecec; }
+.landing .benefit-card:nth-child(6n + 3) { background: #e9f7ec; }
+.landing .benefit-card:nth-child(6n + 4) { background: #fdf0f7; }
+.landing .benefit-card:nth-child(6n + 5) { background: #fff6e6; }
+.landing .benefit-card:nth-child(6n + 6) { background: #e8f7fb; }
+
+.landing .benefit-icon {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(22, 40, 58, 0.05);
+}
+
 .slider-btn--fill:hover { background: #0b677a; }
 
 /* ---------- responsive ---------- */
@@ -3472,4 +3499,227 @@
 .landing .trust-badge:hover {
   background: #fff;
   border-color: #b7e4ef;
+}
+
+/* ==========================================================================
+   v12 — real-content pass: white page, responsive hardening for every
+   laptop size, icon components, no videos.
+   ========================================================================== */
+
+/* ---------- the page stays white; the hero keeps its skyblue panel ---------- */
+.landing {
+  background: #fff;
+  overflow-x: clip;
+}
+
+.landing .hero {
+  width: min(calc(100% - 2.5rem), 1400px);
+  margin: 1.25rem auto 0;
+  padding: clamp(1rem, 2.2vw, 1.7rem);
+  border: 0;
+  border-radius: 34px;
+  background:
+    radial-gradient(ellipse at 84% 6%, rgba(173, 232, 243, 0.8), transparent 48%),
+    radial-gradient(ellipse at 8% 100%, rgba(207, 241, 247, 0.85), transparent 55%),
+    linear-gradient(130deg, #ddf5fa 0%, #eefafd 55%, #cff1f7 100%);
+  box-shadow: 0 30px 80px rgba(24, 81, 102, 0.1);
+  overflow: visible;
+}
+
+/* doctors band also drops its blue tint so the page stays one clean white */
+.landing .doctors {
+  background: #fff;
+}
+
+/* ---------- icons (components/Icons.jsx) ---------- */
+.landing .service-icon,
+.landing .benefit-icon,
+.landing .contact-info-icon,
+.landing .hero-float-icon {
+  display: grid;
+  place-items: center;
+}
+
+.landing .service-icon svg,
+.landing .benefit-icon svg,
+.landing .contact-info-icon svg {
+  display: block;
+}
+
+.landing .trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.landing .trust-badge svg {
+  flex: 0 0 auto;
+  color: var(--teal-deep);
+}
+
+/* ---------- doctors: view-all toggle ---------- */
+.view-all-row .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.view-all-chevron {
+  display: grid;
+  place-items: center;
+  transition: transform 200ms ease;
+}
+
+.view-all-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+/* ---------- blog: expandable posts ---------- */
+.landing .blog-body {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid var(--teal-bright);
+  border-radius: 0 14px 14px 0;
+  background: #f4fbfd;
+  color: #3d5a6b;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+button.blog-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* ---------- gallery: 6 clinic photos, 3 × 2 on desktop ---------- */
+.landing .gallery-images {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.landing .gallery-photo img {
+  height: clamp(190px, 22vw, 260px);
+}
+
+/* ---------- responsive hardening: same layout on every laptop ---------- */
+.landing .landing-bar {
+  flex-wrap: wrap;
+}
+
+.landing .container {
+  max-width: 1240px;
+}
+
+/* big laptops: keep the hero panel from stretching absurdly wide */
+@media (min-width: 1600px) {
+  .landing .hero-panel {
+    max-width: 1400px;
+    margin-inline: auto;
+  }
+}
+
+/* small laptops / landscape tablets */
+@media (max-width: 1180px) {
+  .landing .hero {
+    padding-inline: clamp(1rem, 3vw, 1.8rem);
+  }
+}
+
+@media (max-width: 1020px) {
+  .landing .hero {
+    padding-top: 0.9rem;
+  }
+}
+
+/* phones: nothing sticks out past the viewport */
+@media (max-width: 640px) {
+  .landing .hero {
+    width: calc(100% - 1.5rem);
+    margin-top: 0.75rem;
+    padding: 0.8rem;
+    border-radius: 26px;
+  }
+
+  .hero-float {
+    max-width: calc(100% - 1.4rem);
+  }
+
+  .hero-float--rating { left: 0.4rem; }
+  .hero-float--brand { right: 0.4rem; }
+
+  .hero-doodle { display: none; }
+
+  .landing .gallery-images {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .landing .gallery-images {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-float-text strong { font-size: 0.82rem; }
+  .hero-float-text small { font-size: 0.68rem; }
+}
+
+/* ==========================================================================
+   v13 — testimonials: a continuous, circular auto-scroll of patient reviews.
+   Two identical sets; the track slides -50% and loops forever.
+   ========================================================================== */
+.landing .testimonials-marquee {
+  position: relative;
+  overflow: hidden;
+  margin-top: clamp(1.6rem, 3vw, 2.4rem);
+  padding: 0.25rem 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.landing .testimonials-track {
+  display: flex;
+  width: max-content;
+  animation: testimonials-scroll 44s linear infinite;
+}
+
+/* pause while reading */
+.landing .testimonials-marquee:hover .testimonials-track,
+.landing .testimonials-marquee:focus-within .testimonials-track {
+  animation-play-state: paused;
+}
+
+.landing .testimonials-set {
+  display: flex;
+  flex: 0 0 auto;
+  gap: clamp(1rem, 1.8vw, 1.5rem);
+  padding-right: clamp(1rem, 1.8vw, 1.5rem); /* half-gap so the loop is seamless */
+}
+
+.landing .testimonials-set .testimonial-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: clamp(290px, 30vw, 380px);
+}
+
+@keyframes testimonials-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.testimonials-hint {
+  margin: 1.1rem 0 0;
+  text-align: center;
+  color: #93a9b5;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .testimonials-track { animation: none; }
+  .landing .testimonials-marquee { overflow-x: auto; }
 }
