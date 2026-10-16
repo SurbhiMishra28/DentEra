@@ -3,7 +3,7 @@ import { api } from '../api.js'
 import DentEraMark from '../components/DentEraMark.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
-  Search, MessageCircle, Shield, AlertTriangle, Sparkles, ChevronRight, CalendarCheck, Users,
+  Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
   Calendar, ClipboardList, Stethoscope, LogOut, PieChart, BarChart,
 } from '../components/Icons.jsx'
 import '../dashboard.css'
@@ -28,7 +28,7 @@ const money = n => '₹' + Number(n || 0).toLocaleString('en-IN')
 
 const STATUS_ORDER = ['scheduled', 'completed', 'no_show', 'cancelled']
 const STATUS_META = {
-  scheduled: { label: 'Scheduled', color: '#8b5cf6' },
+  scheduled: { label: 'Scheduled', color: '#0ea5e9' },
   completed: { label: 'Completed', color: '#22c55e' },
   no_show: { label: 'No-show', color: '#f59e0b' },
   cancelled: { label: 'Cancelled', color: '#ef4444' },
@@ -280,24 +280,24 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
       {activeSection === 'overview' && <>
         <div className="stats ref-stats">
-          <div className="stat stat--pink">
-            <span className="stat-icon stat-icon--violet" aria-hidden="true"><CalendarCheck size={20} /></span>
+          <div className="stat stat--sky">
+            <span className="stat-icon stat-icon--sky" aria-hidden="true"><CalendarCheck size={20} /></span>
             <div className="stat-body">
-              <span className="statlabel">TODAY'S APPOINTMENTS</span>
+              <span className="statlabel">{date === today() ? "TODAY'S APPOINTMENTS" : 'APPOINTMENTS'}</span>
               <span className="statnum">{String(appts.length).padStart(2, '0')}</span>
               <span className="stat-foot">{prettyDate(date)}</span>
             </div>
           </div>
-          <div className="stat stat--lav">
-            <span className="stat-icon stat-icon--indigo" aria-hidden="true"><Clock size={20} /></span>
+          <div className="stat stat--mint">
+            <span className="stat-icon stat-icon--green" aria-hidden="true"><Clock size={20} /></span>
             <div className="stat-body">
-              <span className="statlabel">COMPLETED TODAY</span>
+              <span className="statlabel">{date === today() ? 'COMPLETED TODAY' : 'COMPLETED'}</span>
               <span className="statnum">{String(doneToday).padStart(2, '0')}</span>
               <span className="stat-foot">{appts.length ? `of ${appts.length} booked` : 'nothing booked yet'}</span>
             </div>
           </div>
-          <div className="stat stat--grn">
-            <span className="stat-icon stat-icon--blue" aria-hidden="true"><Users size={20} /></span>
+          <div className="stat stat--teal">
+            <span className="stat-icon stat-icon--teal" aria-hidden="true"><Users size={20} /></span>
             <div className="stat-body">
               <span className="statlabel">TOTAL PATIENTS</span>
               <span className="statnum">{patientTotal}+</span>
@@ -309,7 +309,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
         <div className="ref-grid ref-grid--a">
           <section className="panel ref-card">
             <div className="ref-card-head">
-              <div><span className="panel-eyebrow">TODAY</span><h3>Appointment Summary</h3></div>
+              <div className="ref-card-title">
+                <span className="ref-card-icon" aria-hidden="true"><PieChart size={17} /></span>
+                <div><span className="panel-eyebrow">TODAY</span><h3>Appointment Summary</h3></div>
+              </div>
               <span className="ref-card-date">{prettyDate(date)}</span>
             </div>
             <div className="ref-donut-wrap">
@@ -325,7 +328,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
           <section className="panel ref-card">
             <div className="ref-card-head">
-              <div><span className="panel-eyebrow">UP NEXT</span><h3>Next Appointment</h3></div>
+              <div className="ref-card-title">
+                <span className="ref-card-icon" aria-hidden="true"><CalendarCheck size={17} /></span>
+                <div><span className="panel-eyebrow">UP NEXT</span><h3>Next Appointment</h3></div>
+              </div>
               {nextAppt && <span className={'stchip st-' + nextAppt.status}>{nextAppt.status.replace('_', ' ')}</span>}
             </div>
             {nextAppt ? (
@@ -358,7 +364,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
         {isDentist && <div className="ref-grid ref-grid--b">
           <section className="panel ref-card">
             <div className="ref-card-head">
-              <div><span className="panel-eyebrow">WORKLOAD</span><h3>Next 7 Days</h3></div>
+              <div className="ref-card-title">
+                <span className="ref-card-icon" aria-hidden="true"><BarChart size={17} /></span>
+                <div><span className="panel-eyebrow">WORKLOAD</span><h3>Next 7 Days</h3></div>
+              </div>
               <span className="ref-card-date">{week.reduce((s, w) => s + w.count, 0)} visits scheduled</span>
             </div>
             {week.length ? (
@@ -366,7 +375,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
                 {week.map(w => (
                   <div key={w.date} className="ref-bar-col" title={`${prettyDate(w.date)} — ${w.count} appointment${w.count === 1 ? '' : 's'}`}>
                     <span className="ref-bar-count">{w.count || ''}</span>
-                    <i className={'ref-bar' + (w.date === today() ? ' is-today' : '')} style={{ height: `${Math.max(6, (w.count / weekMax) * 92)}%` }} />
+                    <span className="ref-bar-track"><i className={'ref-bar' + (w.date === today() ? ' is-today' : '')} style={{ height: `${Math.max(8, (w.count / weekMax) * 100)}%` }} /></span>
                     <span className="ref-bar-label">{shortDay(w.date)}<small>{dayNum(w.date)}</small></span>
                   </div>
                 ))}
@@ -376,7 +385,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
           <section className="panel ref-card">
             <div className="ref-card-head">
-              <div><span className="panel-eyebrow">TODAY</span><h3>Status Breakdown</h3></div>
+              <div className="ref-card-title">
+                <span className="ref-card-icon" aria-hidden="true"><LayoutGrid size={17} /></span>
+                <div><span className="panel-eyebrow">TODAY</span><h3>Status Breakdown</h3></div>
+              </div>
               <span className="ref-card-date">{statusTotal} appointment{statusTotal === 1 ? '' : 's'}</span>
             </div>
             <div className="ref-statuses">

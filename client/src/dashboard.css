@@ -1941,14 +1941,16 @@
 }
 
 /* ==========================================================================
-   v4 — reference-dashboard pass: pastel stat cards, sidebar profile with
-   indigo nav, donut summary, next-appointment card, 7-day workload bars,
-   status breakdown bars. Pure SVG/CSS — no chart libraries.
+   v4 - reference-dashboard pass: pastel stat cards, sidebar profile with
+   sky/green theme, donut summary, next-appointment card, 7-day workload
+   bars, status breakdown bars. Pure SVG/CSS, no chart libraries.
    ========================================================================== */
 
 .dashboard-page {
-  --ref-indigo: #5a5bd8;
-  --ref-violet: #8b5cf6;
+  --ref-sky: #0ea5e9;
+  --ref-sky-deep: #0284c7;
+  --ref-green: #16a34a;
+  --ref-teal: #0d9488;
 }
 
 /* ---------- topbar + pagehead ---------- */
@@ -1992,8 +1994,8 @@
   place-items: center;
   margin-bottom: 0.25rem;
   border-radius: 50%;
-  background: linear-gradient(145deg, #6d5df6, #5a5bd8);
-  box-shadow: 0 0 0 3px #fff, 0 8px 20px rgba(90, 91, 216, 0.35);
+  background: linear-gradient(145deg, #38bdf8, #0284c7);
+  box-shadow: 0 0 0 3px #fff, 0 8px 20px rgba(2, 132, 199, 0.35);
   color: #fff;
   font-size: 1.35rem;
   font-weight: 800;
@@ -2012,12 +2014,12 @@
   text-transform: capitalize;
 }
 
-/* active nav item — indigo pill like the reference */
+/* active nav item - sky pill matching the clinic theme */
 .dashboard-nav button.is-active {
   border-color: transparent;
-  background: linear-gradient(135deg, #6d5df6, #5a5bd8);
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(90, 91, 216, 0.32);
+  box-shadow: 0 10px 22px rgba(2, 132, 199, 0.32);
 }
 
 .dashboard-nav button.is-active > span {
@@ -2073,9 +2075,9 @@
   box-shadow: 0 18px 38px rgba(24, 81, 102, 0.12);
 }
 
-.dashboard-page .stat--pink { background: #fde9f1; }
-.dashboard-page .stat--lav { background: #ece9fd; }
-.dashboard-page .stat--grn { background: #e2f6e9; }
+.dashboard-page .stat--sky { background: #e0f2fe; }
+.dashboard-page .stat--mint { background: #dcfce7; }
+.dashboard-page .stat--teal { background: #ccfbf1; }
 
 .dashboard-page .ref-stats .stat-icon {
   width: 48px;
@@ -2086,9 +2088,9 @@
   box-shadow: 0 6px 16px rgba(24, 81, 102, 0.1);
 }
 
-.dashboard-page .stat-icon--violet { color: #7c5cf0; }
-.dashboard-page .stat-icon--indigo { color: #5a5bd8; }
-.dashboard-page .stat-icon--blue { color: #4f8dfd; }
+.dashboard-page .stat-icon--sky { color: #0284c7; }
+.dashboard-page .stat-icon--green { color: #16a34a; }
+.dashboard-page .stat-icon--teal { color: #0d9488; }
 
 .dashboard-page .ref-stats .stat-body {
   display: grid;
@@ -2126,6 +2128,30 @@
 
 .ref-card {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ref-card > * {
+  flex: 0 0 auto;
+}
+
+.ref-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.ref-card-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #e0f2fe, #cff0fe);
+  color: #0284c7;
 }
 
 .ref-card-head {
@@ -2159,8 +2185,10 @@
 
 /* ---------- donut + legend ---------- */
 .ref-donut-wrap {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.1rem;
   min-width: 0;
 }
@@ -2219,6 +2247,8 @@
 .ref-next {
   display: grid;
   gap: 0.85rem;
+  align-content: start;
+  flex: 1 1 auto;
 }
 
 .ref-next-head {
@@ -2234,8 +2264,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(145deg, #6d5df6, #5a5bd8);
-  box-shadow: 0 8px 18px rgba(90, 91, 216, 0.3);
+  background: linear-gradient(145deg, #38bdf8, #0284c7);
+  box-shadow: 0 8px 18px rgba(2, 132, 199, 0.3);
   color: #fff;
   font-size: 1.05rem;
   font-weight: 800;
@@ -2289,16 +2319,16 @@
   margin: 0;
   padding: 0.6rem 0.75rem;
   border-radius: 12px;
-  background: #f6f5ff;
-  border: 1px solid #e4e1fb;
-  color: #4c4a8a;
+  background: #eff8ff;
+  border: 1px solid #d6ecfc;
+  color: #075985;
   font-size: 0.74rem;
   font-weight: 600;
 }
 
 .ref-next-note svg {
   flex: 0 0 auto;
-  color: #5a5bd8;
+  color: #0284c7;
 }
 
 .ref-next-actions {
@@ -2316,13 +2346,13 @@
   padding: 0.45rem 1rem;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, #6d5df6, #5a5bd8);
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
   color: #fff;
   font-size: 0.76rem;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(90, 91, 216, 0.28);
+  box-shadow: 0 8px 18px rgba(2, 132, 199, 0.28);
   transition: filter 0.16s ease, transform 0.16s ease;
 }
 
@@ -2332,9 +2362,9 @@
 }
 
 .ref-btn--line {
-  border: 1px solid #dcd9f5;
+  border: 1px solid #c7e6f8;
   background: #fff;
-  color: #4c4a8a;
+  color: #075985;
   box-shadow: none;
 }
 
@@ -2347,10 +2377,11 @@
 
 /* ---------- 7-day workload bars ---------- */
 .ref-bars {
+  flex: 1 1 auto;
   display: flex;
   align-items: stretch;
   gap: clamp(0.5rem, 1.4vw, 1rem);
-  height: 168px;
+  min-height: 168px;
   padding-top: 0.4rem;
 }
 
@@ -2370,6 +2401,15 @@
   min-height: 0.9rem;
 }
 
+.ref-bar-track {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+}
+
 .ref-bar {
   width: min(26px, 70%);
   border-radius: 8px 8px 4px 4px;
@@ -2377,13 +2417,13 @@
   transition: height 0.4s ease;
 }
 
-.ref-bar-col:nth-child(3n + 1) .ref-bar { background: #f9a8d4; }
-.ref-bar-col:nth-child(3n + 2) .ref-bar { background: #93c5fd; }
-.ref-bar-col:nth-child(3n + 3) .ref-bar { background: #c4b5fd; }
+.ref-bar-col:nth-child(3n + 1) .ref-bar { background: #7dd3fc; }
+.ref-bar-col:nth-child(3n + 2) .ref-bar { background: #86efac; }
+.ref-bar-col:nth-child(3n + 3) .ref-bar { background: #5eead4; }
 
 .ref-bar.is-today {
-  background: linear-gradient(180deg, #6d5df6, #5a5bd8) !important;
-  box-shadow: 0 8px 16px rgba(90, 91, 216, 0.35);
+  background: linear-gradient(180deg, #0ea5e9, #0284c7) !important;
+  box-shadow: 0 8px 16px rgba(2, 132, 199, 0.35);
 }
 
 .ref-bar-label {
@@ -2403,6 +2443,7 @@
 
 /* ---------- status breakdown bars ---------- */
 .ref-statuses {
+  flex: 1 1 auto;
   display: grid;
   gap: 0.8rem;
   align-content: center;
@@ -2456,7 +2497,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(145deg, #6d5df6, #5a5bd8);
+  background: linear-gradient(145deg, #38bdf8, #0284c7);
   color: #fff;
   font-size: 0.84rem;
   font-weight: 800;
@@ -2483,8 +2524,9 @@
     display: none;
   }
 
+  /* sign-out stays reachable on mobile â€” it lives only in the sidebar now */
   .ref-signout {
-    display: none;
+    margin-top: 0.35rem;
   }
 }
 
@@ -2499,7 +2541,7 @@
   }
 
   .ref-bars {
-    height: 140px;
+    min-height: 140px;
   }
 
   .ref-next-meta {
@@ -2508,5 +2550,86 @@
 
   .ref-status-row {
     grid-template-columns: 76px minmax(0, 1fr) auto;
+  }
+}
+
+/* ==========================================================================
+   v5 - unification pass: sky/green theme polish, alignment, a11y focus
+   ========================================================================== */
+
+/* unified rhythm: one gap everywhere */
+.dashboard-page .ref-stats {
+  gap: 1rem;
+}
+
+.ref-grid {
+  gap: 1rem;
+}
+
+/* keyboard focus rings in the theme colour */
+.dashboard-page button:focus-visible,
+.dashboard-page a:focus-visible,
+.dashboard-page input:focus-visible,
+.dashboard-page select:focus-visible {
+  outline: 2.5px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+/* stat + analytics cards: consistent radius and soft hover */
+.dashboard-page .ref-stats .stat,
+.dashboard-page .ref-card,
+.dash-book {
+  border-radius: 20px;
+}
+
+/* legend chips: equal height rows, aligned columns */
+.ref-legend li b {
+  min-width: 2.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-status-val {
+  min-width: 4.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-bar-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* next-appointment actions: equal heights, tidy wrap */
+.ref-next-actions .ref-btn {
+  flex: 0 1 auto;
+}
+
+/* appointment + patient rows: vertical centring on all breakpoints */
+.dashboard-page .appt,
+.dashboard-page .ptrow {
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .dashboard-page .appt,
+  .dashboard-page .ptrow {
+    align-items: flex-start;
+  }
+}
+
+/* timechip in the sky family to match the theme */
+.dashboard-page .apptlist .timechip {
+  background: linear-gradient(145deg, #e0f2fe, #cff0fe);
+  color: #075985;
+}
+
+.dashboard-page .apptlist .timechip small {
+  color: #3f89b5;
+}
+
+/* donut card: keep the ring centred when the legend wraps */
+@media (max-width: 1100px) {
+  .ref-donut-wrap {
+    gap: 1.4rem;
   }
 }
