@@ -22,12 +22,12 @@ export default function Landing() {
       <header className="topbar landing-bar">
         <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark"><DentEraMark /></span> DentEra</a>
         <nav className="landing-nav" aria-label="Main navigation">
-          <a href="#top">Home</a>
-          <a href="#About">About</a>
-          <a href="#Services">Services</a>
-          <a href="#why-choose">Why Choose</a>
-          <a href="#gallery">Gallery</a>
-          <a href="#blog">Blog</a>
+          <a href="#/">Home</a>
+          <a href="#/about">About</a>
+          <a href="#/services">Services</a>
+          <a href="#/why-choose">Why Choose</a>
+          <a href="#/gallery">Gallery</a>
+          <a href="#/blog">Blog</a>
         </nav>
         <a className="landing-cta" href="#/login">
           Get Started

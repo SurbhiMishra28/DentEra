@@ -3168,6 +3168,10 @@
    ========================================================================== */
 
 /* current page highlighted in the navbar */
+.landing .landing-nav a {
+  position: relative;
+}
+
 .landing .landing-nav a.is-current {
   color: var(--teal-deep);
   font-weight: 800;

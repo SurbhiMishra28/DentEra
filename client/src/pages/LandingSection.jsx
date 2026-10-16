@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import '../landing.css'
 import Reveal from '../components/Reveal.jsx'
 import DentEraMark from '../components/DentEraMark.jsx'
@@ -56,6 +56,9 @@ export default function LandingSection({ section }) {
   const [eraOpen, setEraOpen] = useState(false)
   const [openPost, setOpenPost] = useState(null)
   const [showAllDoctors, setShowAllDoctors] = useState(true)
+
+  // every section page opens from the top
+  useEffect(() => { window.scrollTo({ top: 0 }) }, [section])
 
   return (
     <div className="landing landing-sub" id="top">
