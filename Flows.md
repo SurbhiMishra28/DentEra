@@ -37,8 +37,8 @@ identity sirf JWT se; har touch `assistant_audit` me.
 ## 3. Login flow
 
 `email+password → throttle check (8/15min pair, 30/IP) → validate → user row lookup →
-match? bcrypt verify + mint JWT (8h) : (unknown? auto-signup as dentist + dentist_patients empty) →
-Set-Cookie dent_token (HttpOnly) → dashboard loads, 3 GETs fire`.
+match AND role ∈ {dentist, admin}? bcrypt verify + mint JWT (8h) : 401 (unknown or non-doctor — NO auto-signup) →
+Set-Cookie dent_token (HttpOnly) → dashboard/admin loads, 3 GETs fire`.
 
 ## 4. Feature working flows
 

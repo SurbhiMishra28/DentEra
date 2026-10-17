@@ -40,7 +40,7 @@ stack as Era.
 
 ## 5. Functional requirements
 
-- **FR1 Auth** — email+password (bcrypt-hashed), auto sign-up, demo login switch; JWT (8h) via HttpOnly cookie; roles `dentist | admin | reception`
+- **FR1 Auth** — email/username + password (bcrypt-hashed), doctors + admin only (NO auto sign-up), demo login switch; JWT (8h) via HttpOnly cookie; roles `dentist | admin | reception` (only dentist/admin may sign in; admin username: `admin`)
 - **FR2 Practice dashboard** — today's appointments, quick stats (today's patients, unpaid invoices), patient register
 - **FR3 Dental chart** — interactive 32-tooth grid; per-tooth status (`healthy|decayed|filled|root_canal|crowned|missing|implant`) + treatment history
 - **FR4 Treatments & plans** — catalogue of standard treatments with default cost/minutes; multi-visit plans with per-item status

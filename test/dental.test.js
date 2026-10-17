@@ -71,10 +71,22 @@ test('auth: wrong password → 401 without existence leak', async () => {
   assert.strictEqual(r.status, 401);
   assert.ok(!/no such|not found|unknown user/i.test(r.body.message), r.body.message);
 });
-test('auth: unknown email auto-signs up (201)', async () => {
+test('auth: unknown email is rejected — no auto-signup (doctors + admin only)', async () => {
   const r = await request(app).post('/api/auth/login').send({ email: 'newdoc@dental.local', password: 'pass1234' });
-  assert.strictEqual(r.status, 201);
-  assert.strictEqual(r.body.user.role, 'dentist');
+  assert.strictEqual(r.status, 401);
+  assert.ok(/doctor/i.test(r.body.message), 'must explain that only doctors can sign in');
+  const none = db.prepare('SELECT COUNT(*) c FROM users WHERE email=?').get('newdoc@dental.local');
+  assert.strictEqual(none.c, 0, 'no account may be created for an unknown email');
+});
+test('auth: admin signs in with username admin + surbhi; non-doctor roles cannot', async () => {
+  const a = await request(app).post('/api/auth/login').send({ email: 'admin', password: 'surbhi' });
+  assert.strictEqual(a.status, 200, a.body.message || '');
+  assert.strictEqual(a.body.user.role, 'admin');
+  assert.strictEqual(a.body.user.dentistId, null);
+  const wrong = await request(app).post('/api/auth/login').send({ email: 'admin', password: 'password123' });
+  assert.strictEqual(wrong.status, 401);
+  const rec = await request(app).post('/api/auth/login').send({ email: 'desk@dental.local', password: 'password123' });
+  assert.strictEqual(rec.status, 401, 'reception/other roles must never sign in');
 });
 
 // ---------- FDI enforced at the API (BE5) ----------
@@ -166,18 +178,22 @@ test('plan: one transaction creates plan+items+invoice; item done recompute; inv
   db.prepare('DELETE FROM treatment_plans WHERE id=?').run(planId);
 });
 
-// ---------- reception role (F8) ----------
-test('reception: can list invoices but cannot write charts (403)', async () => {
-  const r = request.agent(app);
-  await r.post('/api/auth/demo-login').send({ who: 'reception' });
-  const inv = await r.get('/api/invoices');
+// ---------- staff access (F8, updated: only doctors + admin may hold an account) ----------
+test('staff: reception persona removed; admin reads invoices but cannot write charts (403)', async () => {
+  const gone = await request(app).post('/api/auth/demo-login').send({ who: 'reception' });
+  assert.strictEqual(gone.status, 400, 'reception demo persona must no longer exist');
+  const a = request.agent(app);
+  const al = await a.post('/api/auth/demo-login').send({ who: 'admin' });
+  assert.strictEqual(al.status, 200, al.body.message || '');
+  assert.strictEqual(al.body.user.role, 'admin');
+  const inv = await a.get('/api/invoices');
   assert.strictEqual(inv.status, 200);
-  const chart = await r.get('/api/chart/1');
+  const chart = await a.get('/api/chart/1');
   assert.strictEqual(chart.status, 403);
 });
 
 // ---------- assistant brain (BE8) ----------
-test('assistant: books by voice with date+time, denies reception, answers KB with safety line', async () => {
+test('assistant: books by voice with date+time, denies non-dentists, answers KB with safety line', async () => {
   const chat = await agent.post('/api/assistant/chat').send({ message: `book an appointment tomorrow at 5pm for Ravi` });
   assert.strictEqual(chat.status, 200);
   assert.strictEqual(chat.body.tool, 'createAppointment');
@@ -185,7 +201,7 @@ test('assistant: books by voice with date+time, denies reception, answers KB wit
   db.prepare('DELETE FROM appointments WHERE id=?').run(chat.body.tool_result.appointment_id);
 
   const rec = request.agent(app);
-  await rec.post('/api/auth/demo-login').send({ who: 'reception' });
+  await rec.post('/api/auth/demo-login').send({ who: 'admin' }); // admin has no dentistId → tool denied
   const denied = await rec.post('/api/assistant/chat').send({ message: 'book an appointment tomorrow at 5pm for Ravi' });
   assert.strictEqual(denied.body.denied, true);
   assert.ok(/dental account/.test(denied.body.reply));

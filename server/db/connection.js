@@ -45,7 +45,6 @@ function seed() {
   const insDen = db.prepare('INSERT INTO dentists(user_id,specialty,room_no) VALUES (?,?,?)');
   const meera = insUser.run('Dr. Meera Iyer', 'dentist', 'meera@dental.local', hash).lastInsertRowid;
   const arjun = insUser.run('Dr. Arjun Shah', 'dentist', 'arjun@dental.local', hash).lastInsertRowid;
-  insUser.run('Reception', 'reception', 'desk@dental.local', hash);
   const d1 = insDen.run(meera, 'General Dentistry', 'OPD-1').lastInsertRowid;
   const d2 = insDen.run(arjun, 'Orthodontics', 'OPD-2').lastInsertRowid;
   const insPat = db.prepare('INSERT INTO patients(name,dob,phone,gender,medical_notes) VALUES (?,?,?,?,?)');
@@ -117,11 +116,27 @@ function seed() {
   redate();
 }
 
-// additive: every boot ensures the clinic-admin demo persona exists (older DBs get it too)
+// every boot: exactly one clinic admin who signs in with a USERNAME (not an email) —
+// username 'admin' + password 'surbhi' (override via ADMIN_USERNAME / ADMIN_PASSWORD env).
+// Legacy admins (admin@dental.local) are migrated, and any non-doctor account (e.g. an old
+// reception login) is removed — ONLY dentists + the admin may ever hold an account here.
 function ensureAdmin() {
-  if (db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").get()) return;
-  db.prepare('INSERT INTO users(name,role,email,password_hash) VALUES (?,?,?,?)')
-    .run('Clinic Admin', 'admin', 'admin@dental.local', require('bcryptjs').hashSync('password123', 10));
+  const bcrypt = require('bcryptjs');
+  const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || 'admin').toLowerCase();
+  const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || 'surbhi');
+  const hash = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+  const legacy = db.prepare("SELECT id FROM users WHERE email IN ('admin@dental.local','admin@dentera.local') LIMIT 1").get();
+  if (legacy) db.prepare("UPDATE users SET email=?, role='admin', password_hash=? WHERE id=?").run(ADMIN_USERNAME, hash, legacy.id);
+  if (!db.prepare('SELECT id FROM users WHERE email=? LIMIT 1').get(ADMIN_USERNAME)) {
+    db.prepare('INSERT INTO users(name,role,email,password_hash) VALUES (?,?,?,?)')
+      .run('Clinic Admin', 'admin', ADMIN_USERNAME, hash);
+  }
+  try { // prune legacy non-doctor accounts; drop their chat history first (FK constraint)
+    for (const u of db.prepare("SELECT id FROM users WHERE role NOT IN ('dentist','admin')").all()) {
+      db.prepare('DELETE FROM conversations WHERE user_id=?').run(u.id); // messages cascade
+      db.prepare('DELETE FROM users WHERE id=?').run(u.id);
+    }
+  } catch (e) { console.warn('[dentera] non-doctor account cleanup skipped:', e.message); }
 }
 
 // demo freshness: seeded demo appointments drift onto today/tomorrow at every boot (Era's trick)

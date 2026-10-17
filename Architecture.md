@@ -79,9 +79,9 @@ Safety: `PRAGMA foreign_keys = ON`, parameterized `?` queries everywhere, indexe
 
 | Method+Path | Auth | Does |
 |---|---|---|
-| `POST /api/auth/login` · `/logout` | none | sign-in / auto sign-up · clear cookie |
+| `POST /api/auth/login` · `/logout` | none | sign-in (doctors + admin only, username `admin` supported) · clear cookie |
 | `GET /api/assistant/me` | ✓ | identity from token |
-| `POST /api/assistant/demo-login` | DEMO_LOGIN | persona select (`dentistA/dentistB/reception`) |
+| `POST /api/assistant/demo-login` | DEMO_LOGIN | persona select (`dentistA/dentistB/admin`) |
 | `POST /api/assistant/chat` | ✓ | brain → tool → sanitized reply (audit) |
 | `GET/POST /api/appointments`, `GET/PATCH/DELETE /api/appointments/:id` | dentist | CRUD, ownership in WHERE |
 | `GET /api/patients`, `GET /api/patients/:id` | dentist | scoped register |

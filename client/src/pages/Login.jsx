@@ -42,7 +42,7 @@ export default function Login({ onDone }) {
         onDone(data.user)
         location.hash = homeFor(data.user)
       } else {
-        setMsg(data.message || 'Demo login unavailable — please use the email form.')
+        setMsg(data.message || 'Demo login unavailable — please use the sign-in form.')
       }
     } catch {
       setMsg('Unable to reach the clinic server. Please try again.')
@@ -78,18 +78,18 @@ export default function Login({ onDone }) {
         <div className="loginform">
           <span className="login-eyebrow">DOCTOR PORTAL</span>
           <h2 id="login-title">Welcome back</h2>
-          <p className="sub">Sign in to your clinic, or create an account with your email.</p>
+          <p className="sub">Only doctors and the clinic admin can sign in — accounts are pre-registered by the clinic.</p>
           <form onSubmit={submit} id="loginF">
-            <label htmlFor="login-email">Email address</label>
-            <input id="login-email" name="email" type="email" placeholder="you@dental.local" autoComplete="username" required />
+            <label htmlFor="login-email">Email or username</label>
+            <input id="login-email" name="email" type="text" placeholder="you@dental.local or admin" autoComplete="username" required />
             <label htmlFor="login-password">Password</label>
             <input id="login-password" name="password" type="password" placeholder="At least 4 characters" autoComplete="current-password" minLength={4} required />
-            <button disabled={busy} type="submit">{busy ? 'Please wait…' : 'Sign in / Sign up'}</button>
+            <button disabled={busy} type="submit">{busy ? 'Please wait…' : 'Sign in'}</button>
           </form>
           <p className="authmsg" role="status" aria-live="polite">{msg}</p>
 
           <div className="demobox">
-            <span className="demolabel">Or explore a demo clinic — pick a doctor</span>
+            <span className="demolabel">Or explore a demo clinic — pick a doctor or the admin</span>
             <div className="demo-personas">
               <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('dentistA')}>
                 <img
@@ -98,7 +98,7 @@ export default function Login({ onDone }) {
                   loading="lazy"
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/clinic-1.jpg" }}
                 />
-                <span><b>Dr. Meera Sharma</b><small>Chief Dentist</small></span>
+                <span><b>Dr. Meera Iyer</b><small>General Dentistry</small></span>
               </button>
               <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('dentistB')}>
                 <img
@@ -107,12 +107,21 @@ export default function Login({ onDone }) {
                   loading="lazy"
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/dentist-1.jpg" }}
                 />
-                <span><b>Dr. Arjun Patel</b><small>Orthodontist</small></span>
+                <span><b>Dr. Arjun Shah</b><small>Orthodontics</small></span>
+              </button>
+              <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('admin')}>
+                <img
+                  src="/clinic-1.jpg"
+                  alt=""
+                  loading="lazy"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/era.png" }}
+                />
+                <span><b>Clinic Admin</b><small>Admin dashboard</small></span>
               </button>
             </div>
           </div>
 
-          <p className="login-privacy">Your real clinic data is only available after you sign in.</p>
+          <p className="login-privacy">Only the clinic's registered doctors and admin have accounts here.</p>
         </div>
       </section>
     </main>

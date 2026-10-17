@@ -1,5 +1,6 @@
-// server/routes/auth.js — login / auto-signup / logout / me / demo-login.
-// Throttle = TWO counters (Era's lesson): per (IP+email) clears on that account's success;
+// server/routes/auth.js — login (DOCTORS + ADMIN only) / logout / me / demo-login.
+// No auto-signup: an unknown email/username is rejected — accounts exist only via the seed
+// (2 demo doctors) and ensureAdmin (username 'admin'). Throttle = TWO counters (Era's lesson): per (IP+email) clears on that account's success;
 // per IP never clears (one colleague logging in must not re-arm an attacker).
 'use strict';
 const express = require('express');
@@ -38,31 +39,30 @@ const profileOf = u => {
 };
 
 router.post('/login', h((req, res, reqId) => {
-  const email = String((req.body || {}).email || '').toLowerCase().trim();
+  const identity = String((req.body || {}).email || '').toLowerCase().trim(); // email OR username ('admin')
   const password = String((req.body || {}).password || '');
-  const wait = tooMany(req, email);
+  const wait = tooMany(req, identity);
   if (wait) { audit(null, null, 'login_throttled', null, reqId, false, null, 'auth', null);
     return res.status(429).json({ ok: false, error: 'TOO_MANY_ATTEMPTS', retry_after_s: wait,
       message: 'Too many sign-in attempts. Please wait a minute and try again.' }); }
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw Object.assign(new Error('Please enter a valid email address.'), { status: 400, err: 'BAD_REQUEST' });
+  const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identity);
+  const isUsername = /^[a-z0-9][a-z0-9._-]{2,31}$/.test(identity);
+  if (!isEmail && !isUsername) throw Object.assign(new Error('Please enter a valid email address or username.'), { status: 400, err: 'BAD_REQUEST' });
   if (password.length < 4) throw Object.assign(new Error('Please use a password with at least 4 characters.'), { status: 400, err: 'BAD_REQUEST' });
-  const row = db.prepare('SELECT * FROM users WHERE email=?').get(email);
-  if (row && row.password_hash) {
-    if (!bcrypt.compareSync(password, row.password_hash)) { noteFail(req, email);
-      audit(row.id, null, 'login_failed', null, reqId, false, null, 'auth', row.id);
-      throw Object.assign(new Error('Wrong password for this email. New here? A new email creates an account automatically.'), { status: 401, err: 'BAD_CREDENTIALS' }); }
-    const prof = profileOf(row);
-    const t = mintToken(prof, prof.dentistId);
-    audit(row.id, prof.dentistId, 'login', null, reqId, true, null, 'auth', row.id);
-    return res.cookie('dent_token', t, cookieFor(req)).status(200).json({ ok: true, token: t, user: prof });
+  const row = db.prepare('SELECT * FROM users WHERE email=?').get(identity);
+  // doctors + the admin only — unknown users, password-less rows and any other role are all rejected
+  if (!row || !row.password_hash || !['dentist', 'admin'].includes(row.role)) {
+    noteFail(req, identity);
+    audit(row ? row.id : null, null, 'login_failed', null, reqId, false, null, 'auth', row ? row.id : null);
+    throw Object.assign(new Error('Only registered doctors and the clinic admin can sign in to DentEra.'), { status: 401, err: 'BAD_CREDENTIALS' });
   }
-  // unknown email → auto sign-up as a dentist (Era's onboarding trick)
-  const name = (email.split('@')[0].replace(/[._\-+]+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase())) || 'New Dentist';
-  const uid = db.prepare('INSERT INTO users(name,role,email,password_hash) VALUES (?,?,?,?)').run(name, 'dentist', email, bcrypt.hashSync(password, 10)).lastInsertRowid;
-  const did = db.prepare('INSERT INTO dentists(user_id,specialty) VALUES (?,?)').run(uid, 'General Dentistry').lastInsertRowid;
-  const t = mintToken({ id: uid, name, role: 'dentist' }, did);
-  audit(uid, did, 'register', null, reqId, true, null, 'auth', uid);
-  return res.cookie('dent_token', t, cookieFor(req)).status(201).json({ ok: true, created: true, token: t, user: { id: uid, name, role: 'dentist', dentistId: did } });
+  if (!bcrypt.compareSync(password, row.password_hash)) { noteFail(req, identity);
+    audit(row.id, null, 'login_failed', null, reqId, false, null, 'auth', row.id);
+    throw Object.assign(new Error('Wrong password for this account. Please try again.'), { status: 401, err: 'BAD_CREDENTIALS' }); }
+  const prof = profileOf(row);
+  const t = mintToken(prof, prof.dentistId);
+  audit(row.id, prof.dentistId, 'login', null, reqId, true, null, 'auth', row.id);
+  return res.cookie('dent_token', t, cookieFor(req)).status(200).json({ ok: true, token: t, user: prof });
 }));
 
 router.post('/logout', h((req, res, reqId) => {
@@ -80,11 +80,12 @@ router.get('/me', h((req, res) => {
 router.post('/demo-login', h((req, res, reqId) => {
   if (process.env.DEMO_LOGIN === '0') return res.status(404).json({ ok: false, error: 'NOT_FOUND' });
   const who = String((req.body || {}).who || '');
-  const map = { dentistA: 'meera@dental.local', dentistB: 'arjun@dental.local', reception: 'desk@dental.local', admin: 'admin@dental.local' };
+  const map = { dentistA: 'meera@dental.local', dentistB: 'arjun@dental.local', admin: 'admin' }; // no reception — doctors + admin only
   const email = map[who];
   if (!email) throw Object.assign(new Error('Unknown demo user.'), { status: 400, err: 'BAD_REQUEST' });
   const u = db.prepare('SELECT * FROM users WHERE email=?').get(email);
   if (!u) throw Object.assign(new Error('Demo user missing — seed the DB first.'), { status: 404, err: 'NOT_FOUND' });
+  if (!['dentist', 'admin'].includes(u.role)) throw Object.assign(new Error('Only doctors and the admin can sign in.'), { status: 403, err: 'FORBIDDEN' });
   const prof = profileOf(u);
   const t = mintToken(prof, prof.dentistId);
   audit(u.id, prof.dentistId, 'demo_login', null, reqId, true, null, 'auth', u.id);

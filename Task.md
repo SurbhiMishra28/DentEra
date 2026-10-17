@@ -11,7 +11,7 @@
 ## FRONTEND track (client/) ❌
 - [x] FE1 · Scaffold: `npm create vite@latest client -- --template react` + React Router + `vite.config.js` proxy `/api`→:8100 + mint theme tokens in `styles/`
 - [x] FE2 · `api.js` fetch wrapper: `credentials:'include'`, JSON error shape, 401 → redirect `/login`
-- [x] FE3 · `Login` page: email/password + auto-signup message + demo persona select
+- [x] FE3 · `Login` page: email/username + password + demo persona select (2 doctors + admin) — sign-in only, no auto-signup
 - [x] FE4 · `Dashboard`: DayView (today's appointments + `public` badge), StatsPills (patients/active plans/unpaid), patient search table, 60s polling
 - [x] FE5 · `ToothChart` component: 32-tooth FDI grid (two rows of 8), colour legend, click → history panel + status/treatment actions, aria-labels per tooth
 - [x] FE6 · `PatientDetail` page: chart + treatment plan timeline + invoice card (mark paid/partial)

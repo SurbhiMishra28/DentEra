@@ -7,8 +7,8 @@ theme** and a tooth-grid hero.
 ## 1. Screens (3 total)
 
 ### ① Login (`index.html` — `#auth` view)
-Card: logo + "Dentist Login" + email/password + demo `<select>` (Dr. Meera/dentistA, Dr. Arjun/dentistB,
-Reception) + "try it". Identical mechanics to Era's login (auto sign-up, 429 throttle message).
+Card: logo + "Dentist Login" + email-or-username/password + demo persona buttons (Dr. Meera/dentistA,
+Dr. Arjun/dentistB, Clinic Admin/admin). Doctors + admin only — NO auto sign-up (unknown email → 401), 429 throttle message kept.
 
 ### ② Dashboard (`index.html` — `#dash` view)
 - **Header row:** dentist name/role + Sign out
