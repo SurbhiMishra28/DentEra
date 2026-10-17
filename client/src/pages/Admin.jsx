@@ -4,8 +4,9 @@ import DentEraMark from "../components/DentEraMark.jsx"
 import {
   Home, LayoutGrid, Calendar, Users, Wallet, Shield, ClipboardList, Globe,
   Stethoscope, Tooth, RotateCcw, AlertTriangle, LogOut, CalendarCheck, PieChart,
-  ShieldCheck, UserRound, Check,
+  ShieldCheck, UserRound, Check, BarChart,
 } from "../components/Icons.jsx"
+import StatusDonut, { STATUS_ORDER, STATUS_META } from "../components/StatusDonut.jsx"
 import { downloadCSV, todayStamp } from "../utils/csv.js"
 import { printReceipt } from "../utils/receipt.js"
 import "../dashboard.css"
@@ -21,6 +22,15 @@ const niceDate = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); if 
   return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) }
 const initial = n => (n || "?").replace(/^Dr\.?\s*/i, "").trim()[0]?.toUpperCase() || "?"
 const prettyToday = () => new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })
+const pad2 = n => String(n).padStart(2, "0")
+const isoOf = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+const todayIso = () => isoOf(new Date())
+const shortDay = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); if (!m) return s
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString("en-IN", { weekday: "short" }) }
+const dayNum = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); if (!m) return ""
+  return new Date(+m[1], +m[2] - 1, +m[3]).getDate() }
+const prettyLong = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); if (!m) return s
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }) }
 
 const NAV = [
   ["overview", "Overview", Home],
@@ -147,6 +157,20 @@ export default function Admin({ me, onLogout }) {
 
   const copy = SECTION_COPY[section]
   const dentistName = a => a.dentist || "—"
+
+  // ---- overview analytics (clinic-wide, computed from the 7-day appointment list) ----
+  const statusCounts = { scheduled: 0, completed: 0, no_show: 0, cancelled: 0 }
+  appts.forEach(a => { if (statusCounts[a.status] != null) statusCounts[a.status]++ })
+  const statusTotal = appts.length
+  const nextAppt = [...appts].filter(a => a.status === "scheduled")
+    .sort((x, y) => (x.appointment_date + x.start_time).localeCompare(y.appointment_date + y.start_time))[0] || null
+  const dayMap = {}
+  appts.forEach(a => { dayMap[a.appointment_date] = (dayMap[a.appointment_date] || 0) + 1 })
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i); const iso = isoOf(d)
+    return { date: iso, count: dayMap[iso] || 0 }
+  })
+  const weekMax = Math.max(1, ...week.map(w => w.count))
   const exportAppointments = () => downloadCSV(`dentera-appointments-${todayStamp()}.csv`,
     ["ID", "Date", "Start", "End", "Dentist", "Patient", "Reason", "Source", "Status"],
     appts.map(a => [a.id, a.appointment_date, a.start_time, a.end_time, a.dentist, a.registered_patient || a.patient_name || "Walk-in", a.reason, a.source, a.status]))
@@ -218,19 +242,92 @@ export default function Admin({ me, onLogout }) {
             <Stat icon={<Wallet size={20} />} iconClass="stat-icon--sky" color="sky"
               label="UNPAID REVENUE" value={money(ov.unpaid_due)} foot="awaiting collection" />
           </div>
-          <div className="stats ref-stats ref-stats--4">
-            <Stat icon={<ClipboardList size={20} />} iconClass="stat-icon--green" color="mint"
-              label="ACTIVE PLANS" value={ov.plans_active} foot="treatment plans in progress" />
-            <Stat icon={<Globe size={20} />} iconClass="stat-icon--teal" color="teal"
-              label="PUBLIC BOOKINGS" value={ov.public_bookings} foot="self-booked online" />
-            <Stat icon={<Stethoscope size={20} />} iconClass="stat-icon--sky" color="sky"
-              label="DENTISTS / USERS" value={`${ov.dentists}/${ov.users}`} foot="registered accounts" />
-            <Stat icon={<Tooth size={20} />} iconClass="stat-icon--green" color="mint"
-              label="TREATMENTS" value={ov.treatments} foot="in the catalogue" />
+
+          <div className="ref-grid ref-grid--a">
+            <section className="panel ref-card">
+              <CardHead icon={<PieChart size={17} />} eyebrow="UPCOMING WEEK" title="Status split" right={`${statusTotal} appointments`} />
+              <div className="ref-donut-wrap">
+                <StatusDonut counts={statusCounts} total={statusTotal} caption="this week" />
+                <ul className="ref-legend">
+                  {STATUS_ORDER.map(k => (
+                    <li key={k}><i style={{ background: STATUS_META[k].color }} aria-hidden="true" />
+                      <span>{STATUS_META[k].label}</span><b>{Math.round(((statusCounts[k] || 0) / (statusTotal || 1)) * 100)}%</b></li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+
+            <section className="panel ref-card">
+              <CardHead icon={<CalendarCheck size={17} />} eyebrow="UP NEXT" title="Next appointment"
+                right={nextAppt ? <span className={"stchip st-" + nextAppt.status}>{nextAppt.status.replace("_", " ")}</span> : null} />
+              {nextAppt ? (
+                <div className="ref-next">
+                  <div className="ref-next-head">
+                    <span className="ref-next-avatar" aria-hidden="true">{initial(nextAppt.registered_patient || nextAppt.patient_name)}</span>
+                    <div>
+                      <b>{nextAppt.registered_patient || nextAppt.patient_name || "Walk-in"}</b>
+                      <small>{nextAppt.reason || "Consultation"} · {nextAppt.dentist}{nextAppt.source === "public" ? " · public booking" : ""}</small>
+                    </div>
+                  </div>
+                  <div className="ref-next-meta">
+                    <div><small>Time</small><b>{fmt12(nextAppt.start_time)}</b></div>
+                    <div><small>Ends</small><b>{fmt12(nextAppt.end_time)}</b></div>
+                    <div><small>Day</small><b>{shortDay(nextAppt.appointment_date)} {dayNum(nextAppt.appointment_date)}</b></div>
+                  </div>
+                  <p className="ref-next-note"><ClipboardList size={14} /> {prettyLong(nextAppt.appointment_date)} — with {nextAppt.dentist}.</p>
+                </div>
+              ) : (
+                <p className="empty"><CalendarCheck size={22} /> Nothing scheduled this week — a quiet clinic is a happy clinic.</p>
+              )}
+            </section>
+          </div>
+
+          <div className="ref-grid ref-grid--b">
+            <section className="panel ref-card">
+              <CardHead icon={<BarChart size={17} />} eyebrow="WORKLOAD" title="Next 7 days"
+                right={`${week.reduce((s, w) => s + w.count, 0)} visits scheduled`} />
+              <div className="ref-bars" role="img" aria-label="Appointments per day for the next 7 days">
+                {week.map(w => (
+                  <div key={w.date} className="ref-bar-col" title={`${prettyLong(w.date)} — ${w.count} appointment${w.count === 1 ? "" : "s"}`}>
+                    <span className="ref-bar-count">{w.count || ""}</span>
+                    <span className="ref-bar-track"><i className={"ref-bar" + (w.date === todayIso() ? " is-today" : "")}
+                      style={{ height: `${Math.max(8, (w.count / weekMax) * 100)}%` }} /></span>
+                    <span className="ref-bar-label">{shortDay(w.date)}<small>{dayNum(w.date)}</small></span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel ref-card">
+              <CardHead icon={<LayoutGrid size={17} />} eyebrow="THIS WEEK" title="Status breakdown" right={`${statusTotal} appointments`} />
+              <div className="ref-statuses">
+                {STATUS_ORDER.map(k => {
+                  const pct = Math.round(((statusCounts[k] || 0) / (statusTotal || 1)) * 100)
+                  return (
+                    <div key={k} className="ref-status-row">
+                      <span className="ref-status-label">{STATUS_META[k].label}</span>
+                      <span className="ref-status-track"><i style={{ width: `${statusTotal ? pct : 0}%`, background: STATUS_META[k].color }} /></span>
+                      <span className="ref-status-val">{statusCounts[k] || 0}<small> {pct}%</small></span>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
           </div>
 
           <section className="panel ref-card">
-            <CardHead icon={<PieChart size={17} />} eyebrow="LIVE" title="Recent activity" right="latest 10 events" />
+            <CardHead icon={<Tooth size={17} />} eyebrow="AT A GLANCE" title="Clinic resources" />
+            <div className="ref-glance">
+              <div><small>ACTIVE PLANS</small><b>{ov.plans_active}</b><span className="muted">treatment plans in progress</span></div>
+              <div><small>PUBLIC BOOKINGS</small><b>{ov.public_bookings}</b><span className="muted">self-booked online</span></div>
+              <div><small>DENTISTS / USERS</small><b>{ov.dentists}/{ov.users}</b><span className="muted">registered accounts</span></div>
+              <div><small>TREATMENTS</small><b>{ov.treatments}</b><span className="muted">in the catalogue</span></div>
+            </div>
+          </section>
+
+          <section className="panel ref-card">
+            <CardHead icon={<PieChart size={17} />} eyebrow="LIVE" title="Recent activity"
+              right={<span className="rowgap" style={{ marginTop: 0 }}><button className="mini" onClick={exportAudit}>Export CSV</button><span>latest 10 events</span></span>} />
             <div className="tablewrap">
               <table className="tbl">
                 <thead><tr><th>When</th><th>User</th><th>Action</th><th>Tool</th><th>Result</th><th>Detail</th></tr></thead>

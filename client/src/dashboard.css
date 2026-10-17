@@ -2750,3 +2750,41 @@
 .dashboard-page .rowForm .grid3 { align-items: end; }
 .dashboard-page .rowForm .grid3 input,
 .dashboard-page .rowForm .grid3 select { height: 42px; }
+
+/* "clinic at a glance" strip: 4 equal tiles that reflow 4 -> 2 -> 1 */
+.dashboard-page .ref-glance {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.dashboard-page .ref-glance > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
+  background: #f7fbfd;
+  border: 1px solid #e9f1f5;
+  border-radius: 14px;
+  padding: 0.8rem 0.95rem;
+}
+.dashboard-page .ref-glance small {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: rgba(30, 42, 58, 0.55);
+}
+.dashboard-page .ref-glance b {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1e2a3a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.dashboard-page .ref-glance .muted { font-size: 0.7rem; line-height: 1.35; }
+@media (max-width: 900px) {
+  .dashboard-page .ref-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .dashboard-page .ref-glance { grid-template-columns: minmax(0, 1fr); }
+}
