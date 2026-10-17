@@ -420,7 +420,7 @@ a.mini.primary{background:var(--grad);color:#fff}
 @media(max-width:860px){.eraStage{grid-template-columns:1fr;padding:1rem}.eraStageChat .cpLog{max-height:40vh}.eraStage .stage{height:290px}.eraStage .photoWrap img{height:268px}}
 @media(max-width:520px){.eraStage .photoWrap img{width:200px;height:220px}.eraStage .stage{height:238px}.eraStage .ring{width:180px;height:180px}.eraStage .r2{width:220px;height:220px}}
 
-/* shared utilities (kept from old v5.0 block — used by Admin hero) */
+/* shared utilities (kept from old v5.0 block — .btn--ghost is used by the Dashboard) */
 /* Buttons */
 .btn--lg { padding: 1rem 2rem; font-size: 1.05rem; }
 .btn--sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
@@ -434,107 +434,9 @@ a.mini.primary{background:var(--grad);color:#fff}
 }
 .animate-slide-up { animation: slide-up 0.8s var(--transition-normal) both; }
 
-/* ===== ADMIN HERO ENHANCEMENTS ===== */
-.admin-hero {
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.8);
-  border-radius: var(--radius-xl);
-  padding: clamp(1.5rem, 3vw, 2rem);
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  overflow: hidden;
-}
-.admin-hero::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--grad-primary);
-}
-.admin-hero-content { margin-bottom: 1.5rem; }
-.admin-hero-content h1 { margin: 0 0 0.5rem; font-size: clamp(1.5rem, 3vw, 2rem); }
-.admin-hero-content .muted { margin: 0; font-size: 1rem; }
-.admin-quick-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
-.admin-hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
-/* scoped to the Admin hero so the shared .stat used in Dashboard keeps its stacked layout */
-.admin-hero-stats .stat { background: var(--color-white); border: 1px solid rgba(255,255,255,0.8); border-radius: var(--radius-lg); padding: 1.25rem 1rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-sm); transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
-.admin-hero-stats .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+/* colour accents for stat-card modifiers (shared with the Dashboard stat cards) */
 .stat--mint { border-left: 4px solid var(--color-mint); }
 .stat--amber { border-left: 4px solid var(--color-amber); }
 .stat--error { border-left: 4px solid var(--color-error); }
 .stat--info { border-left: 4px solid var(--color-info); }
 .stat--success { border-left: 4px solid var(--color-success); }
-.admin-hero-stats .stat-icon { font-size: 1.75rem; width: 48px; height: 48px; display: grid; place-items: center; border-radius: var(--radius-md); background: var(--color-mint-light); }
-.stat--amber .stat-icon { background: var(--color-amber-light); }
-.stat--error .stat-icon { background: var(--color-error-light); }
-.stat--info .stat-icon { background: var(--color-info-light); }
-.stat--success .stat-icon { background: var(--color-success-light); }
-.stat-content { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
-.admin-hero-stats .statnum { font-size: 1.5rem; font-weight: var(--font-weight-extrabold); color: var(--color-ink); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.admin-hero-stats .statlabel { font-size: 0.75rem; color: var(--color-muted); font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.03em; }
-
-@media (max-width: 640px) {
-  .admin-hero { padding: 1.25rem; }
-  .admin-hero-stats { grid-template-columns: repeat(2, 1fr); }
-  .admin-hero-stats .stat { padding: 1rem 0.75rem; gap: 0.75rem; }
-  .admin-hero-stats .stat-icon { width: 40px; height: 40px; font-size: 1.5rem; }
-  .admin-hero-stats .statnum { font-size: 1.25rem; }
-}
-
-/* ===== ADMIN DASHBOARD POLISH (scoped to .adminview — nothing else is affected) ===== */
-.adminview{background:
-  radial-gradient(900px 420px at 108% -8%, rgba(15,163,149,.10), transparent 60%),
-  radial-gradient(700px 380px at -12% 30%, rgba(240,169,45,.07), transparent 60%)}
-.adminview .topbar{border:1px solid #ffffffd9;box-shadow:0 8px 26px rgba(15,163,149,.12)}
-.adminview .roletag{background:var(--grad);color:#fff;text-transform:uppercase;letter-spacing:.06em;box-shadow:0 2px 8px rgba(15,163,149,.35)}
-button.mini.admin-signout{background:#f4f7f7;border:1px solid var(--line)}
-button.mini.admin-signout:hover{background:#fdecec;color:var(--err);border-color:#f3c8c5;transform:none}
-button.mini.admin-signout:disabled{opacity:.55;cursor:wait}
-
-/* hero card */
-.adminview .admin-hero{background:linear-gradient(135deg,#ffffff 0%,#f2fbf9 55%,#e3f4f1 100%);border:1px solid #ffffff}
-.adminview .admin-hero::before{height:5px}
-.adminview .admin-hero::after{content:"";position:absolute;top:-80px;right:-60px;width:240px;height:240px;border-radius:50%;
-  background:radial-gradient(circle,rgba(15,163,149,.14),transparent 65%);pointer-events:none}
-.admin-eyebrow{display:inline-flex;align-items:center;gap:.4rem;background:#ffffff;color:var(--mint2);border:1px solid #cfe9e4;
-  font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:.32rem .8rem;box-shadow:var(--shadow-sm)}
-.adminview .admin-hero-content h1{letter-spacing:-.03em}
-.adminview .admin-quick-actions .btn{border-radius:999px}
-
-/* stat cards — per-colour glow + gradient icon chips */
-.adminview .admin-hero-stats .stat{position:relative;overflow:hidden}
-.adminview .admin-hero-stats .stat::after{content:"";position:absolute;right:-20px;bottom:-24px;width:80px;height:80px;border-radius:50%;pointer-events:none;opacity:.8}
-.adminview .stat--mint::after{background:radial-gradient(circle,rgba(15,163,149,.16),transparent 70%)}
-.adminview .stat--amber::after{background:radial-gradient(circle,rgba(240,169,45,.18),transparent 70%)}
-.adminview .stat--error::after{background:radial-gradient(circle,rgba(179,38,30,.10),transparent 70%)}
-.adminview .stat--info::after{background:radial-gradient(circle,rgba(28,111,168,.13),transparent 70%)}
-.adminview .stat--success::after{background:radial-gradient(circle,rgba(0,105,92,.13),transparent 70%)}
-.adminview .stat--mint .stat-icon{background:linear-gradient(135deg,#e0f4f0,#c8eae4);color:var(--mint2)}
-.adminview .stat--amber .stat-icon{background:linear-gradient(135deg,#fff4dd,#ffe3ae);color:#9a6b00}
-.adminview .stat--error .stat-icon{background:linear-gradient(135deg,#fdecec,#f8d4d1);color:var(--err)}
-.adminview .stat--info .stat-icon{background:linear-gradient(135deg,#dff0ff,#c3e2f9);color:#1c6fa8}
-.adminview .stat--success .stat-icon{background:linear-gradient(135deg,#dcf5ea,#bfeeda);color:var(--ok)}
-.adminview .admin-hero-stats .stat:hover{transform:translateY(-3px)}
-
-/* tabs */
-.adminview .tab{background:#eef6f4;border:1px solid #e3efec}
-.adminview .tab.on{border-color:transparent;box-shadow:0 8px 20px rgba(15,163,149,.30)}
-
-/* panels + tables */
-.adminview .panel{border-radius:22px;padding:1.35rem 1.5rem;box-shadow:0 10px 34px rgba(15,163,149,.10)}
-.adminview .panel>h3,.adminview .panelhead h3{position:relative;padding-bottom:.5rem;margin-bottom:.55rem}
-.adminview .panel>h3::after,.adminview .panelhead h3::after{content:"";position:absolute;left:0;bottom:0;width:46px;height:4px;border-radius:999px;background:var(--grad)}
-.adminview .tablewrap{border:1px solid var(--line);background:#fff;padding:.15rem .55rem .45rem}
-.adminview .tbl th{padding:.65rem .7rem}
-.adminview .tbl tbody tr{transition:background .15s}
-.adminview .tbl tbody tr:hover{background:#eefaf7}
-
-/* invoices */
-.adminview .invrow{border-radius:14px;padding:.8rem 1rem}
-.adminview .invrow b{font-variant-numeric:tabular-nums}
-
-@media (max-width: 640px) {
-  .adminview .panel{padding:1.1rem 1rem}
-  .adminview .admin-hero::after{display:none}
-}
