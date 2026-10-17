@@ -481,3 +481,60 @@ a.mini.primary{background:var(--grad);color:#fff}
   .admin-hero-stats .stat-icon { width: 40px; height: 40px; font-size: 1.5rem; }
   .admin-hero-stats .statnum { font-size: 1.25rem; }
 }
+
+/* ===== ADMIN DASHBOARD POLISH (scoped to .adminview — nothing else is affected) ===== */
+.adminview{background:
+  radial-gradient(900px 420px at 108% -8%, rgba(15,163,149,.10), transparent 60%),
+  radial-gradient(700px 380px at -12% 30%, rgba(240,169,45,.07), transparent 60%)}
+.adminview .topbar{border:1px solid #ffffffd9;box-shadow:0 8px 26px rgba(15,163,149,.12)}
+.adminview .roletag{background:var(--grad);color:#fff;text-transform:uppercase;letter-spacing:.06em;box-shadow:0 2px 8px rgba(15,163,149,.35)}
+button.mini.admin-signout{background:#f4f7f7;border:1px solid var(--line)}
+button.mini.admin-signout:hover{background:#fdecec;color:var(--err);border-color:#f3c8c5;transform:none}
+button.mini.admin-signout:disabled{opacity:.55;cursor:wait}
+
+/* hero card */
+.adminview .admin-hero{background:linear-gradient(135deg,#ffffff 0%,#f2fbf9 55%,#e3f4f1 100%);border:1px solid #ffffff}
+.adminview .admin-hero::before{height:5px}
+.adminview .admin-hero::after{content:"";position:absolute;top:-80px;right:-60px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,rgba(15,163,149,.14),transparent 65%);pointer-events:none}
+.admin-eyebrow{display:inline-flex;align-items:center;gap:.4rem;background:#ffffff;color:var(--mint2);border:1px solid #cfe9e4;
+  font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:.32rem .8rem;box-shadow:var(--shadow-sm)}
+.adminview .admin-hero-content h1{letter-spacing:-.03em}
+.adminview .admin-quick-actions .btn{border-radius:999px}
+
+/* stat cards — per-colour glow + gradient icon chips */
+.adminview .admin-hero-stats .stat{position:relative;overflow:hidden}
+.adminview .admin-hero-stats .stat::after{content:"";position:absolute;right:-20px;bottom:-24px;width:80px;height:80px;border-radius:50%;pointer-events:none;opacity:.8}
+.adminview .stat--mint::after{background:radial-gradient(circle,rgba(15,163,149,.16),transparent 70%)}
+.adminview .stat--amber::after{background:radial-gradient(circle,rgba(240,169,45,.18),transparent 70%)}
+.adminview .stat--error::after{background:radial-gradient(circle,rgba(179,38,30,.10),transparent 70%)}
+.adminview .stat--info::after{background:radial-gradient(circle,rgba(28,111,168,.13),transparent 70%)}
+.adminview .stat--success::after{background:radial-gradient(circle,rgba(0,105,92,.13),transparent 70%)}
+.adminview .stat--mint .stat-icon{background:linear-gradient(135deg,#e0f4f0,#c8eae4);color:var(--mint2)}
+.adminview .stat--amber .stat-icon{background:linear-gradient(135deg,#fff4dd,#ffe3ae);color:#9a6b00}
+.adminview .stat--error .stat-icon{background:linear-gradient(135deg,#fdecec,#f8d4d1);color:var(--err)}
+.adminview .stat--info .stat-icon{background:linear-gradient(135deg,#dff0ff,#c3e2f9);color:#1c6fa8}
+.adminview .stat--success .stat-icon{background:linear-gradient(135deg,#dcf5ea,#bfeeda);color:var(--ok)}
+.adminview .admin-hero-stats .stat:hover{transform:translateY(-3px)}
+
+/* tabs */
+.adminview .tab{background:#eef6f4;border:1px solid #e3efec}
+.adminview .tab.on{border-color:transparent;box-shadow:0 8px 20px rgba(15,163,149,.30)}
+
+/* panels + tables */
+.adminview .panel{border-radius:22px;padding:1.35rem 1.5rem;box-shadow:0 10px 34px rgba(15,163,149,.10)}
+.adminview .panel>h3,.adminview .panelhead h3{position:relative;padding-bottom:.5rem;margin-bottom:.55rem}
+.adminview .panel>h3::after,.adminview .panelhead h3::after{content:"";position:absolute;left:0;bottom:0;width:46px;height:4px;border-radius:999px;background:var(--grad)}
+.adminview .tablewrap{border:1px solid var(--line);background:#fff;padding:.15rem .55rem .45rem}
+.adminview .tbl th{padding:.65rem .7rem}
+.adminview .tbl tbody tr{transition:background .15s}
+.adminview .tbl tbody tr:hover{background:#eefaf7}
+
+/* invoices */
+.adminview .invrow{border-radius:14px;padding:.8rem 1rem}
+.adminview .invrow b{font-variant-numeric:tabular-nums}
+
+@media (max-width: 640px) {
+  .adminview .panel{padding:1.1rem 1rem}
+  .adminview .admin-hero::after{display:none}
+}

@@ -43,13 +43,13 @@ export default function App() {
   let page
   if (isPublic) page = <PublicBooking />
   else if (sectionPath) page = <LandingSection section={sectionPath.slice(1)} />
-  else if (isGuestHome) page = me ? (me.role === 'admin' ? <Admin me={me} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />) : <Landing />
+  else if (isGuestHome) page = me ? (me.role === 'admin' ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />) : <Landing />
   else if (me === undefined) page = <div className="center">Loading…</div>
   else if (!me) page = <Login onDone={onLoginDone} />
-  else if (path.startsWith('/login')) page = me.role === 'admin' ? <Admin me={me} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
-  else if (path.startsWith('/admin')) page = isAdminArea ? <Admin me={me} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
+  else if (path.startsWith('/login')) page = me.role === 'admin' ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
+  else if (path.startsWith('/admin')) page = isAdminArea ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
   else if (path.startsWith('/patients/')) page = <PatientDetail me={me} id={+path.split('/')[2]} onChat={openEra} />
-  else page = me.role === 'admin' ? <Admin me={me} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
+  else page = me.role === 'admin' ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
 
   return (
     <div className="shell">

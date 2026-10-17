@@ -2,7 +2,7 @@
 import { api } from "../api.js"
 import {
   LayoutGrid, Calendar, Users, Wallet, Shield, CalendarCheck, ClipboardList, Globe,
-  Stethoscope, Tooth, RotateCcw, AlertTriangle,
+  Stethoscope, Tooth, RotateCcw, AlertTriangle, LogOut,
 } from "../components/Icons.jsx"
 
 // Admin panel — clinic-wide view for role "admin" (and "reception", who share
@@ -49,7 +49,7 @@ function StatNumber({ value, prefix = "", suffix = "", delay = 0 }) {
   return <span className="statnum">{prefix}{displayValue.toLocaleString("en-IN")}{suffix}</span>
 }
 
-export default function Admin({ me }) {
+export default function Admin({ me, onLogout }) {
   const [tab, setTab] = useState("overview")
   const [ov, setOv] = useState(null)
   const [appts, setAppts] = useState([])
@@ -57,6 +57,14 @@ export default function Admin({ me }) {
   const [invoices, setInvoices] = useState([])
   const [auditRows, setAuditRows] = useState([])
   const [msg, setMsg] = useState("")
+  const [busyOut, setBusyOut] = useState(false)
+
+  async function logout() {
+    setBusyOut(true)
+    try { await api.post("/api/auth/logout") } catch { /* cookie may already be gone */ }
+    if (onLogout) onLogout()
+    location.hash = "#/"
+  }
 
   async function loadInvoices() {
     const { data } = await api.get("/api/invoices")
@@ -96,20 +104,27 @@ export default function Admin({ me }) {
   ] : []
 
   return (
-    <div className="view">
+    <div className="view adminview">
       <div className="topbar">
         <span className="brand"><span className="brand-mark" aria-hidden="true">D</span> DentEra <span className="roletag">Admin</span></span>
-        <span className="who">{me.name} · {me.role}</span>
+        <span className="doctor-identity">
+          <span className="doctor-avatar" aria-hidden="true">{(me.name || "A").trim()[0]}</span>
+          <span className="who">{me.name}</span>
+        </span>
         <span className="spacer" />
-        <a className="mini" href="#/book">Public booking</a>
-        <a className="mini" href="#/dashboard">Doctor dashboard</a>
+        <a className="mini" href="#/book"><Globe size={14} /> Public booking</a>
+        <a className="mini" href="#/dashboard"><Stethoscope size={14} /> Doctor dashboard</a>
+        <button type="button" className="mini admin-signout" onClick={logout} disabled={busyOut} title="Sign out of DentEra">
+          <LogOut size={14} /> {busyOut ? "Signing out…" : "Sign out"}
+        </button>
       </div>
 
       {/* Enhanced Hero Section */}
       <header className="admin-hero animate-slide-up">
         <div className="admin-hero-content">
+          <span className="admin-eyebrow"><Shield size={12} /> Admin console</span>
           <h1>Clinic Administration</h1>
-          <p className="muted">Complete practice overview — appointments, patients, revenue, and Era's activity trail.</p>
+          <p className="muted">Welcome back, {me.name} · {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })} — the complete practice overview: appointments, patients, revenue, and Era's activity trail.</p>
           <div className="admin-quick-actions">
             <a href="#/book" className="btn btn--ghost btn--sm"><Globe size={14} /> Public Booking</a>
             <a href="#/dashboard" className="btn btn--ghost btn--sm"><Stethoscope size={14} /> Doctor Dashboard</a>
@@ -119,7 +134,7 @@ export default function Admin({ me }) {
         <div className="admin-hero-stats" aria-label="Key metrics">
           {statConfig.map((s, i) => (
             <div key={s.key} className={`stat stat--${s.color} animate-slide-up`} style={{ animationDelay: `${s.delay}ms` }}>
-              <span className="stat-icon" aria-hidden="true">{s.icon}</span>
+              <span className="stat-icon" aria-hidden="true"><s.icon size={22} /></span>
               <div className="stat-content">
                 {s.custom ? (
                   <span className="statnum">{s.custom}</span>
