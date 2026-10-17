@@ -7,6 +7,8 @@ import PublicBooking from './pages/PublicBooking.jsx'
 import Landing from './pages/Landing.jsx'
 import LandingSection from './pages/LandingSection.jsx'
 import Admin from './pages/Admin.jsx'
+import NotFound from './pages/NotFound.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import EraStage from './components/EraStage.jsx'
 
 export default function App() {
@@ -39,12 +41,16 @@ export default function App() {
   const sectionPath = SECTION_PATHS.find(s => path === s)
   const isGuestHome = path === '' || path === '/' || path === '/home'
   const isAdminArea = me && (me.role === 'admin' || me.role === 'reception')
+  // every route the app understands — anything else is a 404
+  const KNOWN = /^\/(dashboard|admin|login|book|patients\/\d+|about|services|why-choose|gallery|blog)?$/
+  const known = KNOWN.test(path)
 
   let page
   if (isPublic) page = <PublicBooking />
   else if (sectionPath) page = <LandingSection section={sectionPath.slice(1)} />
   else if (isGuestHome) page = me ? (me.role === 'admin' ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />) : <Landing />
   else if (me === undefined) page = <div className="center">Loading…</div>
+  else if (!known) page = <NotFound />
   else if (!me) page = <Login onDone={onLoginDone} />
   else if (path.startsWith('/login')) page = me.role === 'admin' ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
   else if (path.startsWith('/admin')) page = isAdminArea ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />
@@ -53,7 +59,7 @@ export default function App() {
 
   return (
     <div className="shell">
-      {page}
+      <ErrorBoundary>{page}</ErrorBoundary>
       {me && chatOpen && <EraStage me={me} greetOnOpen={greetEra} onClose={() => { setChatOpen(false); setGreetEra(false) }} />}
     </div>
   )

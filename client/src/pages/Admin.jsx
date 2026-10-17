@@ -4,7 +4,10 @@ import DentEraMark from "../components/DentEraMark.jsx"
 import {
   Home, LayoutGrid, Calendar, Users, Wallet, Shield, ClipboardList, Globe,
   Stethoscope, Tooth, RotateCcw, AlertTriangle, LogOut, CalendarCheck, PieChart,
+  ShieldCheck, UserRound, Check,
 } from "../components/Icons.jsx"
+import { downloadCSV, todayStamp } from "../utils/csv.js"
+import { printReceipt } from "../utils/receipt.js"
 import "../dashboard.css"
 
 // Admin panel — clinic-wide view for role "admin" (and "reception", who share
@@ -24,7 +27,9 @@ const NAV = [
   ["appointments", "Appointments", LayoutGrid],
   ["patients", "Patients", Users],
   ["billing", "Billing", Wallet],
+  ["doctors", "Doctors", Stethoscope],
   ["audit", "Audit trail", Shield],
+  ["settings", "Settings", ShieldCheck],
 ]
 
 const SECTION_COPY = {
@@ -35,9 +40,13 @@ const SECTION_COPY = {
   patients: { eyebrow: "CLINIC-WIDE", title: "Patients",
     desc: "The full clinic register across every dentist." },
   billing: { eyebrow: "CLINIC-WIDE", title: "Billing",
-    desc: "Invoices for the whole clinic — mark payments as they come in." },
+    desc: "Invoices for the whole clinic — mark payments and print receipts as they come in." },
+  doctors: { eyebrow: "TEAM", title: "Doctors",
+    desc: "The clinic's dentists — add a new doctor and they can sign in right away." },
   audit: { eyebrow: "SECURITY", title: "Audit trail",
     desc: "The last 40 assistant and access events across the clinic." },
+  settings: { eyebrow: "ACCOUNT", title: "Settings",
+    desc: "Your admin account — change your sign-in password here." },
 }
 
 function Stat({ icon, iconClass, color, label, value, foot }) {
@@ -72,12 +81,19 @@ export default function Admin({ me, onLogout }) {
   const [patients, setPatients] = useState([])
   const [invoices, setInvoices] = useState([])
   const [auditRows, setAuditRows] = useState([])
+  const [doctors, setDoctors] = useState([])
+  const [addDoc, setAddDoc] = useState({ name: "", email: "", password: "", specialty: "", room_no: "" })
+  const [pw, setPw] = useState({ current: "", next: "", confirm: "" })
   const [msg, setMsg] = useState("")
   const [busyOut, setBusyOut] = useState(false)
 
   async function loadInvoices() {
     const { data } = await api.get("/api/invoices")
     setInvoices(data.data || [])
+  }
+  async function loadDoctors() {
+    const { data } = await api.get("/api/admin/dentists")
+    setDoctors(data.data || [])
   }
   useEffect(() => {
     ;(async () => {
@@ -86,7 +102,7 @@ export default function Admin({ me, onLogout }) {
         api.get("/api/admin/patients"), api.get("/api/admin/audit")])
       setOv(o.data.data || null); setAppts(a.data.data || [])
       setPatients(p.data.data || []); setAuditRows(au.data.data || [])
-      await loadInvoices()
+      await Promise.all([loadInvoices(), loadDoctors()])
     })()
   }, [])
 
@@ -98,6 +114,30 @@ export default function Admin({ me, onLogout }) {
     await loadInvoices()
   }
 
+  async function print(invId) {
+    const { data } = await api.get(`/api/admin/invoices/${invId}`)
+    if (data && data.data) printReceipt(data.data)
+    else setMsg("Could not load the receipt.")
+  }
+
+  async function addDoctor(e) {
+    e.preventDefault(); setMsg("")
+    const { status, data } = await api.post("/api/admin/dentists", addDoc)
+    if (status === 201) {
+      setMsg(`${addDoc.name} added — they can sign in with ${addDoc.email} now.`)
+      setAddDoc({ name: "", email: "", password: "", specialty: "", room_no: "" })
+      await loadDoctors()
+    } else setMsg(data.message || "Could not add the doctor.")
+  }
+
+  async function changePassword(e) {
+    e.preventDefault(); setMsg("")
+    if (pw.next !== pw.confirm) { setMsg("The new passwords do not match."); return }
+    const { status, data } = await api.post("/api/auth/change-password", { current: pw.current, next: pw.next })
+    if (status === 200) { setMsg(data.message || "Password updated."); setPw({ current: "", next: "", confirm: "" }) }
+    else setMsg(data.message || "Could not change the password.")
+  }
+
   async function logout() {
     setBusyOut(true)
     try { await api.post("/api/auth/logout") } catch { /* cookie may already be gone */ }
@@ -107,6 +147,18 @@ export default function Admin({ me, onLogout }) {
 
   const copy = SECTION_COPY[section]
   const dentistName = a => a.dentist || "—"
+  const exportAppointments = () => downloadCSV(`dentera-appointments-${todayStamp()}.csv`,
+    ["ID", "Date", "Start", "End", "Dentist", "Patient", "Reason", "Source", "Status"],
+    appts.map(a => [a.id, a.appointment_date, a.start_time, a.end_time, a.dentist, a.registered_patient || a.patient_name || "Walk-in", a.reason, a.source, a.status]))
+  const exportPatients = () => downloadCSV(`dentera-patients-${todayStamp()}.csv`,
+    ["ID", "Name", "Phone", "Gender", "Dentists", "Visits", "Medical notes"],
+    patients.map(p => [p.id, p.name, p.phone, p.gender, p.dentists, p.visits, p.medical_notes]))
+  const exportInvoices = () => downloadCSV(`dentera-invoices-${todayStamp()}.csv`,
+    ["ID", "Patient ID", "Amount", "Discount", "Paid", "Status", "Issued"],
+    invoices.map(i => [i.id, i.patient_id, i.amount, i.discount, i.paid_amount, i.status, (i.issued_at || "").slice(0, 16)]))
+  const exportAudit = () => downloadCSV(`dentera-audit-${todayStamp()}.csv`,
+    ["ID", "When", "User", "Action", "Tool", "Result", "Detail"],
+    auditRows.map(r => [r.id, r.created_at, r.user, r.action, r.tool_name, r.success ? "ok" : "failed", r.detail]))
 
   return (
     <div className="view dashboard-page">
@@ -202,7 +254,8 @@ export default function Admin({ me, onLogout }) {
 
         {section === "appointments" && (
           <section className="panel ref-card">
-            <CardHead icon={<Calendar size={17} />} eyebrow="UPCOMING" title="Appointments — next 7 days" right={`${appts.length} booked`} />
+            <CardHead icon={<Calendar size={17} />} eyebrow="UPCOMING" title="Appointments — next 7 days"
+              right={<span className="rowgap" style={{ marginTop: 0 }}><button className="mini" onClick={exportAppointments}>Export CSV</button><span>{appts.length} booked</span></span>} />
             <div className="tablewrap">
               <table className="tbl">
                 <thead><tr><th>When</th><th>Dentist</th><th>Patient</th><th>Reason</th><th>Source</th><th>Status</th></tr></thead>
@@ -226,7 +279,8 @@ export default function Admin({ me, onLogout }) {
 
         {section === "patients" && (
           <section className="panel ref-card">
-            <CardHead icon={<Users size={17} />} eyebrow="REGISTER" title="Patients — all dentists" right={`${patients.length} on file`} />
+            <CardHead icon={<Users size={17} />} eyebrow="REGISTER" title="Patients — all dentists"
+              right={<span className="rowgap" style={{ marginTop: 0 }}><button className="mini" onClick={exportPatients}>Export CSV</button><span>{patients.length} on file</span></span>} />
             <div className="tablewrap">
               <table className="tbl">
                 <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Dentists</th><th>Visits</th><th>Alerts</th></tr></thead>
@@ -250,13 +304,15 @@ export default function Admin({ me, onLogout }) {
 
         {section === "billing" && (
           <section className="panel ref-card">
-            <CardHead icon={<Wallet size={17} />} eyebrow="REVENUE" title="Invoices — whole clinic" right={`${invoices.length} invoices`} />
+            <CardHead icon={<Wallet size={17} />} eyebrow="REVENUE" title="Invoices — whole clinic"
+              right={<span className="rowgap" style={{ marginTop: 0 }}><button className="mini" onClick={exportInvoices}>Export CSV</button><span>{invoices.length} invoices</span></span>} />
             <ul className="list">
               {invoices.map(i => (
                 <li key={i.id} className="invrow">
                   <span><b>#{i.id}</b> {money(i.amount)}{i.discount ? ` − ${money(i.discount)}` : ""} · paid {money(i.paid_amount)}</span>
                   <span className="rowgap">
                     <span className={"stchip st-" + i.status}>{i.status}</span>
+                    <button className="mini" onClick={() => print(i.id)}>Print receipt</button>
                     {i.status !== "paid" && <button className="mini" onClick={() => pay(i.id, true)}>mark fully paid</button>}
                     {i.status === "unpaid" && <button className="mini" onClick={() => pay(i.id, false)}>half payment</button>}
                   </span>
@@ -267,9 +323,72 @@ export default function Admin({ me, onLogout }) {
           </section>
         )}
 
+        {section === "doctors" && (
+          <section className="panel ref-card">
+            <CardHead icon={<Stethoscope size={17} />} eyebrow="TEAM" title="Doctors — all dentists" right={`${doctors.length} doctors`} />
+            <div className="tablewrap">
+              <table className="tbl">
+                <thead><tr><th>#</th><th>Name</th><th>Email (sign-in)</th><th>Specialty</th><th>Room</th><th>Since</th></tr></thead>
+                <tbody>
+                  {doctors.map(d => (
+                    <tr key={d.id}>
+                      <td className="muted">{d.id}</td>
+                      <td><span className="doctor-identity"><span className="doctor-avatar" aria-hidden="true">{initial(d.name)}</span><b>{d.name}</b></span></td>
+                      <td>{d.email || "—"}</td>
+                      <td className="muted">{d.specialty || "—"}</td>
+                      <td className="muted">{d.room_no || "—"}</td>
+                      <td className="muted">{(d.created_at || "").slice(0, 10)}</td>
+                    </tr>
+                  ))}
+                  {doctors.length === 0 && <tr><td colSpan="6" className="empty">No doctors yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+
+            <form className="dash-book" style={{ marginTop: "1.2rem" }} onSubmit={addDoctor} aria-label="Add a doctor">
+              <div className="dash-book__banner">
+                <span className="dash-book__banner-icon" aria-hidden="true"><UserRound size={26} /></span>
+                <div>
+                  <h3>Add a doctor</h3>
+                  <p>They can sign in immediately with the email + temporary password (Mon–Fri 9–5 schedule is created automatically).</p>
+                </div>
+              </div>
+              <div className="rowForm">
+                <div className="grid3">
+                  <label>Doctor name<input value={addDoc.name} onChange={e => setAddDoc({ ...addDoc, name: e.target.value })} placeholder="Dr. Kavya Nair" required /></label>
+                  <label>Email (sign-in)<input type="email" value={addDoc.email} onChange={e => setAddDoc({ ...addDoc, email: e.target.value })} placeholder="kavya@dental.local" required /></label>
+                  <label>Temporary password<input value={addDoc.password} onChange={e => setAddDoc({ ...addDoc, password: e.target.value })} placeholder="at least 6 characters" minLength={6} required /></label>
+                  <label>Specialty<input value={addDoc.specialty} onChange={e => setAddDoc({ ...addDoc, specialty: e.target.value })} placeholder="General Dentistry" /></label>
+                  <label>Room (optional)<input value={addDoc.room_no} onChange={e => setAddDoc({ ...addDoc, room_no: e.target.value })} placeholder="OPD-3" /></label>
+                </div>
+                <button type="submit" className="dash-cta-btn"><Check size={15} /> Add doctor</button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {section === "settings" && (
+          <section className="panel ref-card" style={{ maxWidth: 560 }}>
+            <CardHead icon={<ShieldCheck size={17} />} eyebrow="ACCOUNT" title="Change your password" right={me.role} />
+            <p className="muted" style={{ marginTop: 0 }}>
+              Signed in as <b>{me.name}</b> (username <b>{me.email === "admin" || me.role === "admin" ? "admin" : me.email || "—"}</b>).
+              The new password is used the next time you sign in.
+            </p>
+            <form className="rowForm" onSubmit={changePassword} aria-label="Change password">
+              <div className="grid3" style={{ gridTemplateColumns: "1fr" }}>
+                <label>Current password<input type="password" value={pw.current} onChange={e => setPw({ ...pw, current: e.target.value })} autoComplete="current-password" required /></label>
+                <label>New password (min 6 characters)<input type="password" value={pw.next} onChange={e => setPw({ ...pw, next: e.target.value })} autoComplete="new-password" minLength={6} required /></label>
+                <label>Confirm new password<input type="password" value={pw.confirm} onChange={e => setPw({ ...pw, confirm: e.target.value })} autoComplete="new-password" minLength={6} required /></label>
+              </div>
+              <button type="submit" className="dash-cta-btn"><Check size={15} /> Update password</button>
+            </form>
+          </section>
+        )}
+
         {section === "audit" && (
           <section className="panel ref-card">
-            <CardHead icon={<Shield size={17} />} eyebrow="SECURITY" title="Assistant & access trail" right="last 40 events" />
+            <CardHead icon={<Shield size={17} />} eyebrow="SECURITY" title="Assistant & access trail"
+              right={<span className="rowgap" style={{ marginTop: 0 }}><button className="mini" onClick={exportAudit}>Export CSV</button><span>last 40 events</span></span>} />
             <div className="tablewrap">
               <table className="tbl">
                 <thead><tr><th>When</th><th>User</th><th>Action</th><th>Tool</th><th>Result</th><th>Detail</th></tr></thead>

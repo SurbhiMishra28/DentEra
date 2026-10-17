@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
-import { Tooth, Sparkles, Check, Calendar, Clock, Lock, ChevronRight } from '../components/Icons.jsx'
+import { Tooth, Sparkles, Check, Calendar, Clock, Lock, ChevronRight, Search } from '../components/Icons.jsx'
 import './publicbooking.css'
 
 // Public booking — a full page (not a cramped card): progress rail, dentist cards,
@@ -32,8 +32,22 @@ export default function PublicBooking() {
   const [slot, setSlot] = useState(null)
   const [err, setErr] = useState('')
   const [done, setDone] = useState(null)
+  const [trackPhone, setTrackPhone] = useState('')
+  const [trackRes, setTrackRes] = useState(null)
+  const [trackMsg, setTrackMsg] = useState('')
+  const [trackBusy, setTrackBusy] = useState(false)
 
   useEffect(() => { fetch('/api/health').catch(() => {}) }, [])
+
+  async function track(e) {
+    e.preventDefault(); setTrackMsg(''); setTrackRes(null); setTrackBusy(true)
+    const { status, data } = await api.post('/api/public/track', { phone: trackPhone.trim() })
+    setTrackBusy(false)
+    if (status === 200) {
+      setTrackRes(data.data || [])
+      if (!(data.data || []).length) setTrackMsg('No upcoming bookings found for this number — book one above, or call the clinic.')
+    } else setTrackMsg(data.message || 'Could not look up your booking.')
+  }
 
   async function pickDentist(d) { setDentist(d); setStep(2) }
   async function pickDate(d) {
@@ -49,7 +63,7 @@ export default function PublicBooking() {
       dentist_id: dentist.id, date, time: slot, name: e.target.name.value.trim(),
       phone: e.target.phone.value.trim(), reason: e.target.reason.value.trim()
     })
-    if (status === 201) setDone({ date, time: slot, name: e.target.name.value.trim() })
+    if (status === 201) setDone({ date, time: slot, name: e.target.name.value.trim(), phone: e.target.phone.value.trim() })
     else if (status === 409) { setErr(data.message || 'That slot was just taken.'); setSlots(s => s.filter(x => x.time !== slot)); setSlot(null); setStep(3) }
     else setErr(data.message || 'Booking failed.')
   }
@@ -69,7 +83,7 @@ export default function PublicBooking() {
             <div className="logo"><Sparkles size={34} /></div>
             <h2>Booked!</h2>
             <p className="donebig">See you <b>{done.date === plusDays(1) ? 'tomorrow' : niceLong(done.date)}</b> at <b>{fmt12(done.time)}</b>, {done.name}.</p>
-            <p className="muted">A confirmation call will follow. Need to change plans? Just call the clinic.</p>
+            <p className="muted">Save your number ({done.phone}) — use "Track your booking" on the booking page anytime to double-check the slot. A confirmation call will follow.</p>
             <div className="hero-cta" style={{ justifyContent: 'center' }}>
               <a className="btn" href="#/">Back to home</a>
               <a className="btn ghost" href="#/book">Book another</a>
@@ -170,6 +184,32 @@ export default function PublicBooking() {
               </>
             )}
             {err && <p className="err">{err}</p>}
+          </section>
+
+          <section className="panel bookcard" style={{ marginTop: '1.1rem' }} aria-label="Track an existing booking">
+            <h3><Search size={17} /> Track your booking</h3>
+            <p className="muted" style={{ marginTop: 0, marginBottom: '.8rem' }}>
+              Already booked? Enter the phone number you used — we'll show your upcoming appointments.
+            </p>
+            <form onSubmit={track} className="bookform" style={{ maxWidth: 420 }} noValidate={false}>
+              <label>Phone<input value={trackPhone} onChange={e => setTrackPhone(e.target.value)} placeholder="e.g. 9810022223" required pattern="[0-9+\-\s]{7,15}" /></label>
+              <div className="rowgap"><button type="submit" disabled={trackBusy}>{trackBusy ? 'Looking…' : 'Find my booking'}</button></div>
+            </form>
+            {trackMsg && <p className="muted" role="status">{trackMsg}</p>}
+            {trackRes && trackRes.length > 0 && (
+              <ul className="list" style={{ marginTop: '.9rem' }}>
+                {trackRes.map((r, i) => (
+                  <li key={i}>
+                    <span className="timechip">{dateLabel(r.appointment_date)}<small>{fmt12(r.start_time)}</small></span>
+                    <span className="apptbody">
+                      <b>{r.patient_name}</b><br />
+                      <span className="muted">{r.dentist} · {fmt12(r.start_time)}–{fmt12(r.end_time)}{r.reason ? ` · ${r.reason}` : ''}</span>
+                    </span>
+                    <span className={'stchip st-' + r.status}>{r.status.replace('_', ' ')}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <p className="tiny footnote"><Lock size={13} /> Your details stay private — used only for this appointment.</p>

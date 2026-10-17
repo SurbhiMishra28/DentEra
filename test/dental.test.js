@@ -233,3 +233,76 @@ test('health: ok shape', async () => {
   assert.strictEqual(r.body.ok, true);
   assert.ok(r.body.version);
 });
+
+// ---------- admin extras: doctors, invoice print payload ----------
+test('admin: dentists list + add doctor + the new doctor can sign in', async () => {
+  const noauth = await request(app).get('/api/admin/dentists');
+  assert.strictEqual(noauth.status, 401, 'dentist list requires sign-in');
+  const a = request.agent(app);
+  await a.post('/api/auth/login').send({ email: 'admin', password: 'surbhi' });
+  const list = await a.get('/api/admin/dentists');
+  assert.strictEqual(list.status, 200);
+  assert.ok(list.body.data.length >= 2, 'the two demo doctors must be listed');
+  const mk = await a.post('/api/admin/dentists').send({
+    name: 'Dr. Kavya Nair', email: 'kavya@dental.local', password: 'temp12345', specialty: 'Endodontics', room_no: 'OPD-3' });
+  assert.strictEqual(mk.status, 201, mk.body.message || '');
+  const dup = await a.post('/api/admin/dentists').send({ name: 'X', email: 'kavya@dental.local', password: 'temp12345' });
+  assert.strictEqual(dup.status, 409, 'duplicate email must be refused');
+  const weak = await a.post('/api/admin/dentists').send({ name: 'Y', email: 'y@dental.local', password: 'abc' });
+  assert.strictEqual(weak.status, 400, 'weak temp password must be refused');
+  const login = await request(app).post('/api/auth/login').send({ email: 'kavya@dental.local', password: 'temp12345' });
+  assert.strictEqual(login.status, 200, 'the new doctor must be able to sign in right away');
+  assert.strictEqual(login.body.user.role, 'dentist');
+  assert.ok(login.body.user.dentistId, 'the new doctor must have a dentist profile');
+});
+
+test('admin: invoice print payload has patient + items + due', async () => {
+  const a = request.agent(app);
+  await a.post('/api/auth/login').send({ email: 'admin', password: 'surbhi' });
+  const r = await a.get('/api/admin/invoices/1');
+  assert.strictEqual(r.status, 200, r.body.message || '');
+  assert.ok(r.body.data.invoice && r.body.data.invoice.amount > 0);
+  assert.ok(r.body.data.patient && r.body.data.patient.name, 'print payload must include the patient');
+  assert.ok(Array.isArray(r.body.data.items));
+  assert.strictEqual(typeof r.body.data.due, 'number');
+  const missing = await a.get('/api/admin/invoices/99999');
+  assert.strictEqual(missing.status, 404);
+});
+
+// ---------- change password ----------
+test('auth: change-password verifies the current one and persists', async () => {
+  const a = request.agent(app);
+  const noauth = await request(app).post('/api/auth/change-password').send({ current: 'x', next: 'yyyyyy' });
+  assert.strictEqual(noauth.status, 401, 'change-password requires sign-in');
+  const wrong = await a.post('/api/auth/login').send({ email: 'admin', password: 'surbhi' });
+  assert.strictEqual(wrong.status, 200);
+  const badCurrent = await a.post('/api/auth/change-password').send({ current: 'wrong', next: 'newpass123' });
+  assert.strictEqual(badCurrent.status, 401);
+  const tooShort = await a.post('/api/auth/change-password').send({ current: 'surbhi', next: 'abc' });
+  assert.strictEqual(tooShort.status, 400);
+  const ok = await a.post('/api/auth/change-password').send({ current: 'surbhi', next: 'newpass123' });
+  assert.strictEqual(ok.status, 200, ok.body.message || '');
+  const oldLogin = await request(app).post('/api/auth/login').send({ email: 'admin', password: 'surbhi' });
+  assert.strictEqual(oldLogin.status, 401, 'the old password must stop working');
+  const newLogin = await request(app).post('/api/auth/login').send({ email: 'admin', password: 'newpass123' });
+  assert.strictEqual(newLogin.status, 200, 'the new password must work');
+  const back = await a.post('/api/auth/change-password').send({ current: 'newpass123', next: 'surbhi' });
+  assert.strictEqual(back.status, 200, 'restore the original password for later tests');
+});
+
+// ---------- public track by phone ----------
+test('public: track booking by phone (digits-normalised)', async () => {
+  const ip = '203.0.113.77'; // unique limiter bucket so earlier booking tests don't throttle this one
+  const book = await request(app).post('/api/public/booking').set('x-forwarded-for', ip)
+    .send({ dentist_id: 1, date: TOMORROW, time: '15:40', name: 'TrackMe', phone: '+91 98100 99999', reason: 'track test' });
+  assert.strictEqual(book.status, 201, book.body.message || '');
+  const hit = await request(app).post('/api/public/track').set('x-forwarded-for', ip).send({ phone: '9810099999' });
+  assert.strictEqual(hit.status, 200);
+  assert.ok(hit.body.data.some(r => r.patient_name === 'TrackMe'), 'booking must be found by the same digits');
+  const miss = await request(app).post('/api/public/track').set('x-forwarded-for', ip).send({ phone: '9800000000' });
+  assert.strictEqual(miss.status, 200);
+  assert.strictEqual(miss.body.data.length, 0, 'unknown phone returns an empty list');
+  const bad = await request(app).post('/api/public/track').set('x-forwarded-for', ip).send({ phone: 'abc' });
+  assert.strictEqual(bad.status, 400);
+  db.prepare(`DELETE FROM appointments WHERE patient_name='TrackMe'`).run();
+});

@@ -20,6 +20,8 @@ function limited(req) {
 const note = req => { const ip = ipOf(req); tries.set(ip, (tries.get(ip) || []).concat(Date.now())); };
 
 const PHONE = /^[0-9+\-\s]{7,15}$/;
+// canonical phone for tracking: keep only the last 10 digits ("+91 98100 12345" → "9810012345")
+const last10 = p => (String(p).match(/\d/g) || []).join('').slice(-10);
 
 router.get('/public/slots', h((req, res) => {
   if (limited(req)) return res.status(429).json({ ok: false, error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please wait a few minutes.' });
@@ -64,10 +66,28 @@ router.post('/public/booking', h((req, res, reqId) => {
     AND ? < end_time AND start_time < ?`).get(dentistId, date, time, end);
   if (clash) { audit(null, null, 'public_booking_clash', null, reqId, false, date + ' ' + time, 'booking', dentistId);
     return res.status(409).json({ ok: false, error: 'SLOT_TAKEN', message: 'That slot was just taken — please pick another.' }); }
-  const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,appointment_date,start_time,end_time,status,reason,source)
-    VALUES (?,?,?,?,?,?,'scheduled',?,'public')`).run(dentistId, null, name, date, time, end, reason || 'Booking via website').lastInsertRowid;
+  // store the last 10 digits so "+91 98100 12345" and "9810012345" track the same booking
+  const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,patient_phone,appointment_date,start_time,end_time,status,reason,source)
+    VALUES (?,?,?,?,?,?,?,'scheduled',?,'public')`).run(dentistId, null, name, last10(phone), date, time, end, reason || 'Booking via website').lastInsertRowid;
   audit(null, null, 'public_booking', null, reqId, true, name + ' ' + date + ' ' + time, 'booking', id);
-  res.status(201).json({ ok: true, data: { id, date, time, name } });
+  res.status(201).json({ ok: true, data: { id, date, time, name, phone: last10(phone) } });
+}));
+
+// "track my booking" — look up upcoming bookings by the phone number used to book. Unauthenticated
+// by design, so it is rate-limited (same limiter) and returns only upcoming, non-cancelled rows.
+router.post('/public/track', h((req, res) => {
+  if (limited(req)) return res.status(429).json({ ok: false, error: 'TOO_MANY_ATTEMPTS', message: 'Too many requests. Please wait a few minutes.' });
+  note(req);
+  const phone = String((req.body || {}).phone || '').trim();
+  if (!PHONE.test(phone)) throw Object.assign(new Error('Please enter a valid phone number (7–15 digits).'), { status: 400, err: 'BAD_REQUEST' });
+  const rows = db.prepare(`SELECT a.appointment_date, a.start_time, a.end_time, a.status, a.reason,
+      a.patient_name, u.name AS dentist
+    FROM appointments a
+    JOIN dentists dn ON dn.id = a.dentist_id
+    JOIN users u ON u.id = dn.user_id
+    WHERE a.patient_phone=? AND a.appointment_date>=? AND a.status!='cancelled'
+    ORDER BY a.appointment_date, a.start_time LIMIT 20`).all(last10(phone), localDay(0));
+  res.json({ ok: true, data: rows });
 }));
 
 module.exports = router;

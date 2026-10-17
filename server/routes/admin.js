@@ -4,8 +4,9 @@
 // Every query is parameterized; no patient data leaves dentist scoping here.
 'use strict';
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { db, localDay } = require('../db/connection');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, httpErr } = require('../middleware/auth');
 const { h } = require('../middleware/helpers');
 const { audit } = require('../services/audit');
 
@@ -75,6 +76,59 @@ router.get('/audit', h((req, res, reqId) => {
     ORDER BY aa.id DESC LIMIT 40`).all();
   audit(req.auth.sub, null, 'list', 'admin_audit', reqId, true, null, 'admin', null);
   res.json({ ok: true, data: rows });
+}));
+
+// ---------- dentists (list: admin + reception · add: admin only) ----------
+router.get('/dentists', h((req, res, reqId) => {
+  const rows = db.prepare(`
+    SELECT d.id, d.specialty, d.room_no, u.name, u.email, u.created_at
+    FROM dentists d JOIN users u ON u.id = d.user_id
+    ORDER BY d.id`).all();
+  audit(req.auth.sub, null, 'list', 'admin_dentists', reqId, true, null, 'admin', null);
+  res.json({ ok: true, data: rows });
+}));
+
+router.post('/dentists', h((req, res, reqId) => {
+  if (req.auth.role !== 'admin') throw httpErr(403, 'FORBIDDEN', 'Only the clinic admin can add dentists.');
+  const b = req.body || {};
+  const name = String(b.name || '').trim().slice(0, 120);
+  const email = String(b.email || '').toLowerCase().trim();
+  const password = String(b.password || '');
+  const specialty = String(b.specialty || 'General Dentistry').trim().slice(0, 80) || 'General Dentistry';
+  const room = String(b.room_no || '').trim().slice(0, 20) || null;
+  if (!name) throw httpErr(400, 'BAD_REQUEST', 'A doctor name is required.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw httpErr(400, 'BAD_REQUEST', 'Please enter a valid email address for the doctor.');
+  if (password.length < 6) throw httpErr(400, 'BAD_REQUEST', 'Please use a temporary password with at least 6 characters.');
+  if (db.prepare('SELECT id FROM users WHERE email=?').get(email))
+    throw httpErr(409, 'EMAIL_TAKEN', 'That email already has an account.');
+  const uid = db.prepare('INSERT INTO users(name,role,email,password_hash) VALUES (?,?,?,?)')
+    .run(name, 'dentist', email, bcrypt.hashSync(password, 10)).lastInsertRowid;
+  const did = db.prepare('INSERT INTO dentists(user_id,specialty,room_no) VALUES (?,?,?)').run(uid, specialty, room).lastInsertRowid;
+  // default working week Mon–Fri 09:00–17:00 (the doctor's own schedule editor can change it)
+  const insSch = db.prepare('INSERT INTO dentist_schedules(dentist_id,day_of_week,start_time,end_time) VALUES (?,?,?,?)');
+  for (const dow of [1, 2, 3, 4, 5]) insSch.run(did, dow, '09:00', '17:00');
+  audit(req.auth.sub, null, 'create', 'admin_dentists', reqId, true, name + ' <' + email + '>', 'admin', uid);
+  res.status(201).json({ ok: true, data: { id: did, user_id: uid, name, email } });
+}));
+
+// ---------- invoice print payload (receipt: invoice + patient + plan items) ----------
+router.get('/invoices/:id', h((req, res, reqId) => {
+  const inv = db.prepare('SELECT * FROM invoices WHERE id=?').get(+req.params.id);
+  if (!inv) throw httpErr(404, 'NOT_FOUND', 'No such invoice.');
+  const patient = inv.patient_id
+    ? db.prepare('SELECT name, phone FROM patients WHERE id=?').get(inv.patient_id) || null : null;
+  const planRow = inv.plan_id
+    ? db.prepare('SELECT title, dentist_id FROM treatment_plans WHERE id=?').get(inv.plan_id) || null : null;
+  const items = planRow ? db.prepare(`SELECT pi.visit_no, pi.tooth_fdi, pi.cost, pi.status,
+      t.name AS treatment_name
+    FROM plan_items pi LEFT JOIN treatments t ON t.id = pi.treatment_id
+    WHERE pi.plan_id=? ORDER BY pi.visit_no, pi.id`).all(inv.plan_id) : [];
+  const dentist = planRow
+    ? (db.prepare('SELECT u.name FROM dentists d JOIN users u ON u.id=d.user_id WHERE d.id=?').get(planRow.dentist_id) || {}).name || null
+    : null;
+  const due = Math.max(0, (inv.amount || 0) - (inv.discount || 0) - (inv.paid_amount || 0));
+  audit(req.auth.sub, null, 'get', 'admin_invoice_print', reqId, true, null, 'admin', inv.id);
+  res.json({ ok: true, data: { invoice: inv, patient, plan: planRow, items, dentist, due } });
 }));
 
 module.exports = router;

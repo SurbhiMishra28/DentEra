@@ -76,6 +76,22 @@ router.get('/me', h((req, res) => {
   return res.status(200).json({ ok: true, user: profileOf(db.prepare('SELECT * FROM users WHERE id=?').get(u.sub) || {}) });
 }));
 
+// change your own password (any signed-in user: doctors + the admin)
+router.post('/change-password', h((req, res, reqId) => {
+  const u = requireAuth(req);
+  const b = req.body || {};
+  const current = String(b.current || ''), next = String(b.next || '');
+  if (next.length < 6) throw Object.assign(new Error('Please use a new password with at least 6 characters.'), { status: 400, err: 'BAD_REQUEST' });
+  const row = db.prepare('SELECT * FROM users WHERE id=?').get(u.sub);
+  if (!row || !row.password_hash || !bcrypt.compareSync(current, row.password_hash))
+    throw Object.assign(new Error('Your current password is not correct.'), { status: 401, err: 'BAD_CREDENTIALS' });
+  if (bcrypt.compareSync(next, row.password_hash))
+    throw Object.assign(new Error('The new password must be different from the current one.'), { status: 400, err: 'BAD_REQUEST' });
+  db.prepare("UPDATE users SET password_hash=?, updated_at=datetime('now') WHERE id=?").run(bcrypt.hashSync(next, 10), u.sub);
+  audit(u.sub, u.dentistId, 'password_change', null, reqId, true, null, 'auth', u.sub);
+  res.json({ ok: true, message: 'Password updated — use it the next time you sign in.' });
+}));
+
 // demo personas (DEMO_LOGIN=1) — for the bundled UI and reviewers
 router.post('/demo-login', h((req, res, reqId) => {
   if (process.env.DEMO_LOGIN === '0') return res.status(404).json({ ok: false, error: 'NOT_FOUND' });
