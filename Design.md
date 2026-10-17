@@ -8,7 +8,8 @@ theme** and a tooth-grid hero.
 
 ### ① Login (`index.html` — `#auth` view)
 Card: logo + "Dentist Login" + email-or-username/password + demo persona buttons (Dr. Meera/dentistA,
-Dr. Arjun/dentistB, Clinic Admin/admin). Doctors + admin only — NO auto sign-up (unknown email → 401), 429 throttle message kept.
+Dr. Arjun/dentistB). Doctors + admin only — NO auto sign-up (unknown email → 401), 429 throttle message kept.
+The admin has NO demo button — she signs in with username `admin` + her password.
 
 ### ② Dashboard (`index.html` — `#dash` view)
 - **Header row:** dentist name/role + Sign out

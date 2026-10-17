@@ -179,11 +179,13 @@ test('plan: one transaction creates plan+items+invoice; item done recompute; inv
 });
 
 // ---------- staff access (F8, updated: only doctors + admin may hold an account) ----------
-test('staff: reception persona removed; admin reads invoices but cannot write charts (403)', async () => {
+test('staff: admin (via username+password) reads invoices but cannot write charts (403)', async () => {
   const gone = await request(app).post('/api/auth/demo-login').send({ who: 'reception' });
   assert.strictEqual(gone.status, 400, 'reception demo persona must no longer exist');
+  const noDemoAdmin = await request(app).post('/api/auth/demo-login').send({ who: 'admin' });
+  assert.strictEqual(noDemoAdmin.status, 400, 'admin must NOT be a demo persona — password login only');
   const a = request.agent(app);
-  const al = await a.post('/api/auth/demo-login').send({ who: 'admin' });
+  const al = await a.post('/api/auth/login').send({ email: 'admin', password: 'surbhi' });
   assert.strictEqual(al.status, 200, al.body.message || '');
   assert.strictEqual(al.body.user.role, 'admin');
   const inv = await a.get('/api/invoices');
@@ -201,7 +203,7 @@ test('assistant: books by voice with date+time, denies non-dentists, answers KB 
   db.prepare('DELETE FROM appointments WHERE id=?').run(chat.body.tool_result.appointment_id);
 
   const rec = request.agent(app);
-  await rec.post('/api/auth/demo-login').send({ who: 'admin' }); // admin has no dentistId → tool denied
+  await rec.post('/api/auth/login').send({ email: 'admin', password: 'surbhi' }); // admin has no dentistId → tool denied
   const denied = await rec.post('/api/assistant/chat').send({ message: 'book an appointment tomorrow at 5pm for Ravi' });
   assert.strictEqual(denied.body.denied, true);
   assert.ok(/dental account/.test(denied.body.reply));

@@ -89,7 +89,7 @@ export default function Login({ onDone }) {
           <p className="authmsg" role="status" aria-live="polite">{msg}</p>
 
           <div className="demobox">
-            <span className="demolabel">Or explore a demo clinic — pick a doctor or the admin</span>
+            <span className="demolabel">Or explore a demo clinic — pick a doctor</span>
             <div className="demo-personas">
               <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('dentistA')}>
                 <img
@@ -108,15 +108,6 @@ export default function Login({ onDone }) {
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/dentist-1.jpg" }}
                 />
                 <span><b>Dr. Arjun Shah</b><small>Orthodontics</small></span>
-              </button>
-              <button type="button" className="demo-persona" disabled={busy} onClick={() => demo('admin')}>
-                <img
-                  src="/clinic-1.jpg"
-                  alt=""
-                  loading="lazy"
-                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/era.png" }}
-                />
-                <span><b>Clinic Admin</b><small>Admin dashboard</small></span>
               </button>
             </div>
           </div>

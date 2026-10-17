@@ -80,7 +80,7 @@ router.get('/me', h((req, res) => {
 router.post('/demo-login', h((req, res, reqId) => {
   if (process.env.DEMO_LOGIN === '0') return res.status(404).json({ ok: false, error: 'NOT_FOUND' });
   const who = String((req.body || {}).who || '');
-  const map = { dentistA: 'meera@dental.local', dentistB: 'arjun@dental.local', admin: 'admin' }; // no reception — doctors + admin only
+  const map = { dentistA: 'meera@dental.local', dentistB: 'arjun@dental.local' }; // demo = 2 doctors only; admin ALWAYS signs in with username+password
   const email = map[who];
   if (!email) throw Object.assign(new Error('Unknown demo user.'), { status: 400, err: 'BAD_REQUEST' });
   const u = db.prepare('SELECT * FROM users WHERE email=?').get(email);
