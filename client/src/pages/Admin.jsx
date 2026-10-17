@@ -208,7 +208,7 @@ export default function Admin({ me, onLogout }) {
         {msg && <p className="authmsg ok" role="status" aria-live="polite">{msg}</p>}
 
         {section === "overview" && ov && <>
-          <div className="stats ref-stats">
+          <div className="stats ref-stats ref-stats--4">
             <Stat icon={<CalendarCheck size={20} />} iconClass="stat-icon--sky" color="sky"
               label="APPOINTMENTS TODAY" value={ov.appts_today} foot={prettyToday()} />
             <Stat icon={<Calendar size={20} />} iconClass="stat-icon--green" color="mint"
@@ -218,7 +218,7 @@ export default function Admin({ me, onLogout }) {
             <Stat icon={<Wallet size={20} />} iconClass="stat-icon--sky" color="sky"
               label="UNPAID REVENUE" value={money(ov.unpaid_due)} foot="awaiting collection" />
           </div>
-          <div className="stats ref-stats">
+          <div className="stats ref-stats ref-stats--4">
             <Stat icon={<ClipboardList size={20} />} iconClass="stat-icon--green" color="mint"
               label="ACTIVE PLANS" value={ov.plans_active} foot="treatment plans in progress" />
             <Stat icon={<Globe size={20} />} iconClass="stat-icon--teal" color="teal"

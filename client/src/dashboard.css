@@ -2678,3 +2678,75 @@
     gap: 1.4rem;
   }
 }
+
+/* ==========================================================================
+   v5.2 — alignment + resolution polish (shared by doctor & admin dashboards)
+   ========================================================================== */
+
+/* 4-up stat rows (admin overview): 4 → 2 → 1 — every card always the same width */
+.dashboard-page .ref-stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1200px) {
+  .dashboard-page .ref-stats--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .dashboard-page .ref-stats--4 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* one stat-card rhythm: equal heights, aligned label / number / foot baselines */
+.dashboard-page .ref-stats .stat {
+  min-height: 106px;
+  padding: 1.1rem 1.15rem;
+}
+.dashboard-page .ref-stats .statnum { letter-spacing: -0.02em; }
+.dashboard-page .ref-stats .stat-foot { min-height: 1em; }
+@media (max-width: 860px) {
+  .dashboard-page .ref-stats .stat { min-height: 92px; }
+}
+
+/* 3-up row (doctor overview) keeps 3 clean columns on tablets, drops to 1 on phones */
+@media (max-width: 1100px) and (min-width: 861px) {
+  .dashboard-page .ref-stats:not(.ref-stats--4) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .dashboard-page .ref-stats:not(.ref-stats--4) { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* cards: equal height per row + one unified surface */
+.dashboard-page .ref-grid { align-items: stretch; }
+.dashboard-page .ref-card {
+  height: 100%;
+  border: 1px solid #e9f1f5;
+  box-shadow: 0 10px 30px rgba(24, 81, 102, 0.07);
+}
+.dashboard-page .ref-card-head { min-height: 44px; align-items: center; }
+.dashboard-page .ref-card-head h3 { line-height: 1.25; }
+
+/* tables inside cards: framed, tidy columns, soft hover */
+.dashboard-page .tablewrap {
+  border: 1px solid #e6eef2;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.15rem 0.55rem 0.35rem;
+}
+.dashboard-page .tbl { font-size: 0.87rem; }
+.dashboard-page .tbl th { padding: 0.6rem 0.7rem; background: #f7fbfd; }
+.dashboard-page .tbl th:first-child { border-top-left-radius: 12px; }
+.dashboard-page .tbl th:last-child { border-top-right-radius: 12px; }
+.dashboard-page .tbl td { padding: 0.66rem 0.7rem; vertical-align: middle; }
+.dashboard-page .tbl tbody tr { transition: background 0.14s ease; }
+.dashboard-page .tbl tbody tr:hover { background: #f2f9fc; }
+
+/* billing rows: equal height, money right-aligned with tabular digits */
+.dashboard-page .list li { min-height: 58px; }
+.dashboard-page .invrow { justify-content: space-between; border-radius: 14px; padding: 0.75rem 1rem; }
+.dashboard-page .invrow b { font-variant-numeric: tabular-nums; }
+.dashboard-page .invrow .rowgap { margin-top: 0; }
+
+/* section rhythm: one consistent gap everywhere */
+.dashboard-page .pagehead { margin-bottom: 1.1rem; }
+.dashboard-page .ref-stats { margin-bottom: 1.1rem; }
+
+/* forms inside cards: inputs bottom-aligned so button rows stay straight */
+.dashboard-page .rowForm .grid3 { align-items: end; }
+.dashboard-page .rowForm .grid3 input,
+.dashboard-page .rowForm .grid3 select { height: 42px; }
