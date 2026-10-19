@@ -60,6 +60,8 @@ CREATE TABLE IF NOT EXISTS appointments(
   end_time TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN('scheduled','completed','cancelled','no_show')),
   reason TEXT,
+  email TEXT,                    -- contact email collected on the booking forms
+  address TEXT,                  -- postal address collected on the booking forms
   source TEXT NOT NULL DEFAULT 'doctor' CHECK(source IN('doctor','public')),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

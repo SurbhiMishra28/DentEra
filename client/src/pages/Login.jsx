@@ -65,9 +65,8 @@ export default function Login({ onDone }) {
 
       <section className="login-layout" aria-label="Doctor sign in">
         <aside className="login-aside">
-          <span className="login-aside-kicker">DENTAL PRACTICE WORKSPACE</span>
           <h1>Your clinic, in one place.</h1>
-          <p>Spend less time switching between tools and more time focused on your patients.</p>
+          <p>Appointments, patient charts, treatment plans and billing — from one workspace.</p>
           <ul>
             <li><span aria-hidden="true"><Check size={14} /></span> Appointments and patient records</li>
             <li><span aria-hidden="true"><Check size={14} /></span> Treatment plans and clinical charting</li>
@@ -76,8 +75,7 @@ export default function Login({ onDone }) {
         </aside>
 
         <div className="loginform">
-          <span className="login-eyebrow">DOCTOR PORTAL</span>
-          <h2 id="login-title">Welcome back</h2>
+          <h2 id="login-title">Doctor sign in</h2>
           <p className="sub">Only doctors and the clinic admin can sign in — accounts are pre-registered by the clinic.</p>
           <form onSubmit={submit} id="loginF">
             <label htmlFor="login-email">Email or username</label>

@@ -4,7 +4,7 @@ import DentEraMark from '../components/DentEraMark.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
   Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
-  Calendar, ClipboardList, Stethoscope, LogOut, PieChart, BarChart,
+  ClipboardList, Stethoscope, LogOut, Menu,
 } from '../components/Icons.jsx'
 import '../dashboard.css'
 
@@ -25,6 +25,8 @@ const dayNum = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); i
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
 const initial = n => (n || '?').replace(/^Dr\.?\s*/i, '').trim()[0]?.toUpperCase() || '?'
 const money = n => '₹' + Number(n || 0).toLocaleString('en-IN')
+// stock portrait for the signed-in doctor's profile photo
+const doctorPhoto = id => `/doctor-${((((id || 1) - 1) % 8) + 8) % 8 + 1}.jpg`
 
 const STATUS_ORDER = ['scheduled', 'completed', 'no_show', 'cancelled']
 const STATUS_META = {
@@ -34,26 +36,9 @@ const STATUS_META = {
   cancelled: { label: 'Cancelled', color: '#ef4444' },
 }
 
-/* Donut — pure SVG, no chart library. Segments = today's appointment statuses. */
-function Donut({ counts, total }) {
-  const R = 52, C = 2 * Math.PI * R
-  let acc = 0
-  const segs = total
-    ? STATUS_ORDER.map(k => { const frac = counts[k] / total; const seg = { k, frac, offset: acc }; acc += frac; return seg })
-      .filter(s => s.frac > 0)
-    : []
-  return (
-    <svg viewBox="0 0 140 140" className="ref-donut" role="img" aria-label={`Appointment status split — ${total} today`}>
-      <circle cx="70" cy="70" r={R} fill="none" stroke="#eef1f6" strokeWidth="16" />
-      {segs.map(s => (
-        <circle key={s.k} cx="70" cy="70" r={R} fill="none" stroke={STATUS_META[s.k].color} strokeWidth="16"
-          strokeDasharray={`${s.frac * C} ${C - s.frac * C}`} strokeDashoffset={-s.offset * C}
-          transform="rotate(-90 70 70)" />
-      ))}
-      <text x="70" y="68" textAnchor="middle" className="ref-donut-num">{total}</text>
-      <text x="70" y="88" textAnchor="middle" className="ref-donut-cap">today</text>
-    </svg>
-  )
+/* Patient initials avatar */
+function PatAvatar({ name, big }) {
+  return <span className={big ? 'ref-next-avatar' : 'ref-row-avatar'} aria-hidden="true">{initial(name)}</span>
 }
 
 export default function Dashboard({ me, onChat, onLogout }) {
@@ -65,36 +50,33 @@ export default function Dashboard({ me, onChat, onLogout }) {
   const [date, setDate] = useState(today())
   const [msg, setMsg] = useState('')
   const [activeSection, setActiveSection] = useState('overview')
+  const [sideOpen, setSideOpen] = useState(false) // mobile: off-canvas sidebar drawer
 
   // booking studio state
   const [bookOpen, setBookOpen] = useState(false)
-  const [book, setBook] = useState({ patient_id: '', patient_name: '', date: today(), time: '10:00', minutes: 30, reason: 'Consultation' })
+  const [book, setBook] = useState({ patient_id: '', fname: '', lname: '', phone: '', email: '', address: '', date: today(), time: '10:00', minutes: 30, reason: 'Consultation' })
   const [bookErr, setBookErr] = useState('')
+  const [bookBusy, setBookBusy] = useState(false)
   const [slots, setSlots] = useState(null)          // undefined = loading, null = fall back to manual time
   const [treatments, setTreatments] = useState([])
   const slotsSeq = useRef(0)
-
-  // weekly workload bar chart (next 7 days)
-  const [week, setWeek] = useState([])
-  const [weekTick, setWeekTick] = useState(0)
-  const weekSeq = useRef(0)
 
   const [addOpen, setAddOpen] = useState(false)
   const [addPatient, setAddPatient] = useState({ name: '', phone: '', dob: '', gender: '', medical_notes: '' })
 
   async function load() {
+    const safe = p => p.catch(() => ({ data: { data: [] } }))
     const [a, p, pt, i] = await Promise.all([
-      api.get(`/api/appointments?date=${date}`), api.get(`/api/patients?q=${encodeURIComponent(q)}`),
-      api.get('/api/patients?q='), api.get('/api/invoices?status=unpaid')])
+      safe(api.get(`/api/appointments?date=${date}`)), safe(api.get(`/api/patients?q=${encodeURIComponent(q)}`)),
+      safe(api.get('/api/patients?q=')), safe(api.get('/api/invoices?status=unpaid'))])
     setAppts(a.data.data || []); setPatients(p.data.data || [])
     setPatientTotal((pt.data.data || []).length); setInvoices(i.data.data || [])
   }
 
   useEffect(() => {
-    let live = true
-    async function pull() { await load(); if (!live) return }
-    pull(); const t = setInterval(pull, 60000)
-    return () => { live = false; clearInterval(t) }
+    load()
+    const t = setInterval(load, 60000)
+    return () => clearInterval(t)
   }, [date, q]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // treatment catalogue powers the reason quick-picks (duration auto-syncs per treatment)
@@ -117,21 +99,9 @@ export default function Dashboard({ me, onChat, onLogout }) {
     return () => { live = false }
   }, [bookOpen, book.date, me.role])
 
-  // next-7-days appointment counts for the workload chart (dentists only, refetched after writes)
-  useEffect(() => {
-    if (activeSection !== 'overview' || me.role !== 'dentist') return
-    const seq = ++weekSeq.current
-    let live = true
-    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return isoOf(d) })
-    Promise.all(days.map(d => api.get(`/api/appointments?date=${d}`).catch(() => ({ data: { data: [] } }))))
-      .then(res => { if (live && seq === weekSeq.current) setWeek(days.map((d, i) => ({ date: d, count: (res[i].data.data || []).length }))) })
-    return () => { live = false }
-  }, [activeSection, me.role, weekTick])
-
   async function logout() { await api.post('/api/auth/logout'); onLogout(); location.hash = '#/' }
 
-  const allInvoices = invoices
-  const due = allInvoices.reduce((s, i) => s + (i.amount - i.discount - i.paid_amount), 0)
+  const due = invoices.reduce((s, i) => s + (i.amount - i.discount - i.paid_amount), 0)
   const doneToday = appts.filter(a => a.status === 'completed').length
 
   const statusCounts = { scheduled: 0, completed: 0, no_show: 0, cancelled: 0 }
@@ -139,28 +109,27 @@ export default function Dashboard({ me, onChat, onLogout }) {
   const statusTotal = STATUS_ORDER.reduce((s, k) => s + statusCounts[k], 0)
   const nextAppt = appts.filter(a => a.status === 'scheduled')
     .sort((x, y) => String(x.start_time || '').localeCompare(String(y.start_time || '')))[0] || null
-  const weekMax = Math.max(1, ...week.map(w => w.count))
 
   const pageCopy = {
     overview: {
-      eyebrow: 'CLINIC OVERVIEW',
-      title: `${greet()}, ${me.name.replace(/^Dr\.?\s*/i, 'Dr. ')}`,
-      description: `${prettyDate(date)} — here's your clinic today.`
+      eyebrow: 'OVERVIEW',
+      title: 'Dashboard',
+      description: prettyDate(date)
     },
     appointments: {
-      eyebrow: 'YOUR SCHEDULE',
+      eyebrow: 'SCHEDULE',
       title: 'Appointments',
-      description: 'Review and manage your clinic schedule.'
+      description: 'Appointments booked for the selected day.'
     },
     patients: {
-      eyebrow: 'YOUR CLINIC',
+      eyebrow: 'CLINIC',
       title: 'Patient register',
-      description: 'Find patient records and keep your clinic details up to date.'
+      description: 'Registered patients and their contact details.'
     },
     billing: {
-      eyebrow: 'PAYMENTS TO FOLLOW UP',
-      title: 'Billing',
-      description: 'Review outstanding invoices and update payment status.'
+      eyebrow: 'BILLING',
+      title: 'Unpaid invoices',
+      description: 'Outstanding payments to follow up.'
     }
   }[activeSection]
 
@@ -175,33 +144,53 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
   async function bookAppt(e) {
     e.preventDefault(); setBookErr('')
-    // the chosen duration is honoured — end_time is computed and sent
+    const phone = (book.phone || '').trim()
+    const email = (book.email || '').trim()
+    const address = (book.address || '').trim()
+    const reason = book.reason.trim() || 'Consultation'
     const end_time = addMin(book.time, +book.minutes)
-    const body = book.patient_id
-      ? { patient_id: +book.patient_id, date: book.date, start_time: book.time, end_time, reason: book.reason }
-      : { patient_name: book.patient_name, date: book.date, start_time: book.time, end_time, reason: book.reason }
-    const { status, data } = await api.post('/api/appointments', body)
-    if (status === 201) {
-      const who = book.patient_id
-        ? ((patients.find(p => p.id === +book.patient_id) || {}).name || 'the patient')
-        : (book.patient_name || 'the patient')
-      setMsg(`Booked ${who} at ${fmt12(book.time)} on ${prettyDate(book.date)} — the slot is protected.`)
-      setBookOpen(false); load(); setWeekTick(t => t + 1)
-    } else setBookErr(data.message || 'Could not book — please try another time.')
+    let pid = null, name
+    if (book.patient_id) {
+      pid = +book.patient_id
+      name = (patients.find(p => p.id === pid) || {}).name || 'the patient'
+    } else {
+      name = [book.fname.trim(), book.lname.trim()].filter(Boolean).join(' ')
+      if (name.length < 2) { setBookErr('Please enter the patient name.'); return }
+      if (phone && !/^[0-9+\-\s]{7,15}$/.test(phone)) { setBookErr('Please enter a valid mobile number (7–15 digits).'); return }
+    }
+    setBookBusy(true)
+    try {
+      // with a mobile number: register (or reuse) the patient record, then link the visit to it
+      if (!pid && phone) {
+        const pr = await api.post('/api/patients', { name, phone })
+        if (pr.status === 201 || pr.status === 200) pid = (pr.data.data || {}).id || null
+        else { setBookErr(pr.data.message || 'Could not save the patient record.'); return }
+      }
+      const body = pid
+        ? { patient_id: pid, date: book.date, start_time: book.time, end_time, reason, email, address }
+        : { patient_name: name, date: book.date, start_time: book.time, end_time, reason, email, address }
+      const { status, data } = await api.post('/api/appointments', body)
+      if (status === 201) {
+        setMsg(`Booked ${name} at ${fmt12(book.time)} on ${prettyDate(book.date)}${pid ? ` — patient #${pid} linked.` : ' — walk-in saved.'}`)
+        setBookOpen(false)
+        setBook(b => ({ ...b, fname: '', lname: '', phone: '', email: '', address: '' }))
+        load()
+      } else setBookErr(data.message || 'Could not book — please try another time.')
+    } finally { setBookBusy(false) }
   }
 
   async function setStatus(id, status) {
     setMsg('')
     const { status: code, data } = await api.patch(`/api/appointments/${id}`, { status })
     setMsg(code === 200 ? `Marked ${status.replace('_', ' ')}.` : (data.message || 'Failed.'))
-    load(); setWeekTick(t => t + 1)
+    load()
   }
 
   async function cancelAppt(id) {
     setMsg('')
     const { data } = await api.del(`/api/appointments/${id}`)
     setMsg(data.ok ? 'Appointment cancelled.' : (data.message || 'Failed.'))
-    load(); setWeekTick(t => t + 1)
+    load()
   }
 
   async function addNewPatient(e) {
@@ -218,50 +207,50 @@ export default function Dashboard({ me, onChat, onLogout }) {
   }
 
   async function pay(invId, full) {
-    const inv = allInvoices.find(i => i.id === invId)
+    const inv = invoices.find(i => i.id === invId)
     const amount = full ? (inv.amount - inv.discount) : Math.round((inv.amount - inv.discount) / 2)
     const { data } = await api.patch(`/api/invoices/${invId}`, { paid_amount: amount })
     setMsg(data.data ? `Invoice #${invId} → ${data.data.status}.` : (data.message || 'Failed.'))
     load()
   }
 
-  const isDentist = me.role === 'dentist'
   const walkInMode = !book.patient_id
-  const bookedPatient = book.patient_id ? patients.find(p => p.id === +book.patient_id) : null
-  const ticketName = bookedPatient ? bookedPatient.name : (book.patient_name || '')
-  const ticketEnd = addMin(book.time, +book.minutes)
 
   return (
     <div className="view dashboard-page">
-      <aside className="dashboard-sidebar" aria-label="Clinic navigation">
+      <aside className={'dashboard-sidebar' + (sideOpen ? ' is-open' : '')} aria-label="Clinic navigation">
         <a className="brand dashboard-brand" href="#/" aria-label="DentEra home">
           <span className="brand-mark"><DentEraMark /></span>
           <span>DentEra<small>CLINIC WORKSPACE</small></span>
         </a>
 
         <div className="ref-profile">
-          <span className="ref-profile-avatar" aria-hidden="true">{initial(me.name)}</span>
+          <span className="ref-profile-avatar is-photo">
+            <img src={doctorPhoto(me.id)} alt="" />
+          </span>
           <b>{me.name}</b>
-          <small>{isDentist ? (me.specialty || 'Dentist') : (me.role || 'Staff')}</small>
+          <small>{me.role === 'dentist' ? (me.specialty || 'Dentist') : (me.role || 'Staff')}</small>
         </div>
 
         <nav className="dashboard-nav" aria-label="Dashboard sections">
-          <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => setActiveSection('overview')}><span aria-hidden="true"><Home size={17} /></span>Overview</button>
-          <button type="button" className={activeSection === 'appointments' ? 'is-active' : ''} aria-current={activeSection === 'appointments' ? 'page' : undefined} onClick={() => setActiveSection('appointments')}><span aria-hidden="true"><LayoutGrid size={17} /></span>Appointments</button>
-          <button type="button" className={activeSection === 'patients' ? 'is-active' : ''} aria-current={activeSection === 'patients' ? 'page' : undefined} onClick={() => setActiveSection('patients')}><span aria-hidden="true"><UserRound size={17} /></span>Patients</button>
-          <button type="button" className={activeSection === 'billing' ? 'is-active' : ''} aria-current={activeSection === 'billing' ? 'page' : undefined} onClick={() => setActiveSection('billing')}><span aria-hidden="true"><IndianRupee size={17} /></span>Billing</button>
+          <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => { setActiveSection('overview'); setSideOpen(false) }}><span aria-hidden="true"><Home size={17} /></span>Overview</button>
+          <button type="button" className={activeSection === 'appointments' ? 'is-active' : ''} aria-current={activeSection === 'appointments' ? 'page' : undefined} onClick={() => { setActiveSection('appointments'); setSideOpen(false) }}><span aria-hidden="true"><LayoutGrid size={17} /></span>Appointments</button>
+          <button type="button" className={activeSection === 'patients' ? 'is-active' : ''} aria-current={activeSection === 'patients' ? 'page' : undefined} onClick={() => { setActiveSection('patients'); setSideOpen(false) }}><span aria-hidden="true"><UserRound size={17} /></span>Patients</button>
+          <button type="button" className={activeSection === 'billing' ? 'is-active' : ''} aria-current={activeSection === 'billing' ? 'page' : undefined} onClick={() => { setActiveSection('billing'); setSideOpen(false) }}><span aria-hidden="true"><IndianRupee size={17} /></span>Billing</button>
         </nav>
 
         <button type="button" className="ref-signout" onClick={logout}><LogOut size={16} /> Sign out</button>
       </aside>
+      {sideOpen && <div className="dash-scrim" onClick={() => setSideOpen(false)} aria-hidden="true" />}
 
       <main className="dashboard-main" id="overview">
       <div className="topbar dashboard-toolbar">
+        <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)}><Menu size={20} /></button>
         <h1 className="ref-topbar-title">Dashboard</h1>
         <span className="spacer" />
         {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin"><Shield size={14} /> Admin panel</a>}
         <a className="mini" href="#/book">Public booking</a>
-        {isDentist && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
+        {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
       </div>
 
       <div className="pagehead">
@@ -270,7 +259,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <h2 className="ref-pagehead-title">{pageCopy.title}</h2>
           <p className="muted">{pageCopy.description}</p>
         </div>
-        {isDentist && <div className="dashboard-actions">
+        {me.role === 'dentist' && <div className="dashboard-actions">
           {(activeSection === 'overview' || activeSection === 'patients') && <button className="btn btn--ghost" onClick={toggleAdd}><Plus size={15} /> Add patient</button>}
           {(activeSection === 'overview' || activeSection === 'appointments') && <button className="btn dash-cta-btn" onClick={toggleBook}><CalendarCheck size={15} /> New appointment</button>}
         </div>}
@@ -310,25 +299,6 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <section className="panel ref-card">
             <div className="ref-card-head">
               <div className="ref-card-title">
-                <span className="ref-card-icon" aria-hidden="true"><PieChart size={17} /></span>
-                <div><span className="panel-eyebrow">TODAY</span><h3>Appointment Summary</h3></div>
-              </div>
-              <span className="ref-card-date">{prettyDate(date)}</span>
-            </div>
-            <div className="ref-donut-wrap">
-              <Donut counts={statusCounts} total={statusTotal} />
-              <ul className="ref-legend">
-                {STATUS_ORDER.map(k => (
-                  <li key={k}><i style={{ background: STATUS_META[k].color }} aria-hidden="true" />
-                    <span>{STATUS_META[k].label}</span><b>{Math.round((statusCounts[k] / (statusTotal || 1)) * 100)}%</b></li>
-                ))}
-              </ul>
-            </div>
-          </section>
-
-          <section className="panel ref-card">
-            <div className="ref-card-head">
-              <div className="ref-card-title">
                 <span className="ref-card-icon" aria-hidden="true"><CalendarCheck size={17} /></span>
                 <div><span className="panel-eyebrow">UP NEXT</span><h3>Next Appointment</h3></div>
               </div>
@@ -337,7 +307,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
             {nextAppt ? (
               <div className="ref-next">
                 <div className="ref-next-head">
-                  <span className="ref-next-avatar" aria-hidden="true">{initial(nextAppt.patient_name)}</span>
+                  <PatAvatar name={nextAppt.patient_name} big />
                   <div>
                     <b>{nextAppt.patient_name || 'Walk-in'}</b>
                     <small>{nextAppt.reason || 'Consultation'}{nextAppt.source === 'public' ? ' · public booking' : ''}</small>
@@ -348,7 +318,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
                   <div><small>Ends</small><b>{fmt12(nextAppt.end_time)}</b></div>
                   <div><small>Day</small><b>{shortDay(nextAppt.appointment_date)} {dayNum(nextAppt.appointment_date)}</b></div>
                 </div>
-                <p className="ref-next-note"><ClipboardList size={14} /> {nextAppt.reason || 'Consultation'} — slot protected, overlaps refused.</p>
+                <p className="ref-next-note">
+                  <ClipboardList size={14} /> {nextAppt.reason || 'Consultation'} — overlapping bookings are blocked automatically.
+                  {nextAppt.email ? ` · ${nextAppt.email}` : ''}{nextAppt.address ? ` · ${nextAppt.address}` : ''}
+                </p>
                 <div className="ref-next-actions">
                   <a className="ref-btn ref-btn--line" href={`#/patients/${nextAppt.patient_id || ''}`} style={nextAppt.patient_id ? null : { visibility: 'hidden' }}>Open chart</a>
                   <button type="button" className="ref-btn" onClick={() => setStatus(nextAppt.id, 'completed')}><Check size={14} /> Mark complete</button>
@@ -356,38 +329,14 @@ export default function Dashboard({ me, onChat, onLogout }) {
                 </div>
               </div>
             ) : (
-              <p className="empty"><CalendarCheck size={22} /> {appts.length ? 'All caught up — no scheduled visits left today.' : 'No appointments this day.'}</p>
+              <p className="empty"><CalendarCheck size={22} /> {appts.length ? 'No scheduled visits left today.' : 'No appointments today.'}</p>
             )}
           </section>
-        </div>
-
-        {isDentist && <div className="ref-grid ref-grid--b">
-          <section className="panel ref-card">
-            <div className="ref-card-head">
-              <div className="ref-card-title">
-                <span className="ref-card-icon" aria-hidden="true"><BarChart size={17} /></span>
-                <div><span className="panel-eyebrow">WORKLOAD</span><h3>Next 7 Days</h3></div>
-              </div>
-              <span className="ref-card-date">{week.reduce((s, w) => s + w.count, 0)} visits scheduled</span>
-            </div>
-            {week.length ? (
-              <div className="ref-bars" role="img" aria-label="Appointments per day for the next 7 days">
-                {week.map(w => (
-                  <div key={w.date} className="ref-bar-col" title={`${prettyDate(w.date)} — ${w.count} appointment${w.count === 1 ? '' : 's'}`}>
-                    <span className="ref-bar-count">{w.count || ''}</span>
-                    <span className="ref-bar-track"><i className={'ref-bar' + (w.date === today() ? ' is-today' : '')} style={{ height: `${Math.max(8, (w.count / weekMax) * 100)}%` }} /></span>
-                    <span className="ref-bar-label">{shortDay(w.date)}<small>{dayNum(w.date)}</small></span>
-                  </div>
-                ))}
-              </div>
-            ) : <p className="empty"><BarChart size={22} /> Loading your week…</p>}
-          </section>
 
           <section className="panel ref-card">
             <div className="ref-card-head">
               <div className="ref-card-title">
-                <span className="ref-card-icon" aria-hidden="true"><LayoutGrid size={17} /></span>
-                <div><span className="panel-eyebrow">TODAY</span><h3>Status Breakdown</h3></div>
+                <div><span className="panel-eyebrow">TODAY</span><h3>Status breakdown</h3></div>
               </div>
               <span className="ref-card-date">{statusTotal} appointment{statusTotal === 1 ? '' : 's'}</span>
             </div>
@@ -404,10 +353,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
               })}
             </div>
           </section>
-        </div>}
+        </div>
       </>}
 
-      {bookOpen && (activeSection === 'overview' || activeSection === 'appointments') && isDentist && (
+      {bookOpen && (activeSection === 'overview' || activeSection === 'appointments') && me.role === 'dentist' && (
         <form className="dash-book" onSubmit={bookAppt} aria-label="Book an appointment">
           <div className="dash-book__banner">
             <span className="dash-book__banner-icon" aria-hidden="true"><CalendarCheck size={26} /></span>
@@ -417,109 +366,103 @@ export default function Dashboard({ me, onChat, onLogout }) {
             </div>
           </div>
 
-          <div className="dash-book__cols">
-            <div className="dash-book__steps">
-              <section className="dash-book__sec">
-                <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">1</span><h4>Patient</h4></div>
-                <div className="seg" role="group" aria-label="Patient type">
-                  <button type="button" className={walkInMode ? 'seg__btn is-on' : 'seg__btn'} aria-pressed={walkInMode} onClick={() => setBook(b => ({ ...b, patient_id: '' }))}>Walk-in</button>
-                  <button type="button" className={!walkInMode ? 'seg__btn is-on' : 'seg__btn'} aria-pressed={!walkInMode} disabled={!patients.length}
-                    onClick={() => setBook(b => ({ ...b, patient_id: b.patient_id || (patients[0] ? String(patients[0].id) : '') }))}>Registered{!patients.length ? ' · none' : ''}</button>
-                </div>
-                {walkInMode ? (
-                  <label className="dash-book__field">Walk-in name
-                    <input value={book.patient_name} onChange={e => setBook({ ...book, patient_name: e.target.value })} placeholder="e.g. Ravi Kumar" required />
-                  </label>
-                ) : (
-                  <label className="dash-book__field">Registered patient
-                    <select value={book.patient_id} onChange={e => setBook({ ...book, patient_id: e.target.value })} required>
-                      {patients.map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` · ${p.phone}` : ''}</option>)}
-                    </select>
-                  </label>
-                )}
-              </section>
-
-              <section className="dash-book__sec">
-                <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">2</span><h4>Day & time</h4><small>your working hours only</small></div>
-                <div className="daychips">
-                  <button type="button" className={book.date === today() ? 'daychip is-on' : 'daychip'} onClick={() => setBook(b => ({ ...b, date: today() }))}>Today</button>
-                  <button type="button" className={book.date === tomorrow() ? 'daychip is-on' : 'daychip'} onClick={() => setBook(b => ({ ...b, date: tomorrow() }))}>Tomorrow</button>
-                  <input type="date" value={book.date} onChange={e => setBook({ ...book, date: e.target.value })} required aria-label="Pick a date" />
-                </div>
-
-                {slots === undefined && (
-                  <div className="slotgrid" aria-hidden="true">{Array.from({ length: 8 }).map((_, i) => <span key={i} className="slotchip slotchip--skeleton" />)}</div>
-                )}
-                {Array.isArray(slots) && slots.length > 0 && (<>
-                  <p className="slotnote">{slots.length} free slot{slots.length === 1 ? '' : 's'} on {prettyDate(book.date)}</p>
-                  <div className="slotgrid">
-                    {slots.map(s => (
-                      <button key={s.time} type="button" className={book.time === s.time ? 'slotchip is-on' : 'slotchip'} onClick={() => setBook(b => ({ ...b, time: s.time }))}>{fmt12(s.time)}</button>
-                    ))}
-                  </div>
-                </>)}
-                {Array.isArray(slots) && slots.length === 0 && (
-                  <p className="slotempty">Fully booked or a day off — pick another day, or type a custom time below.</p>
-                )}
-                <label className="dash-book__custom">Custom start time
-                  <input type="time" value={book.time} onChange={e => setBook({ ...book, time: e.target.value })} required />
+          <section className="dash-book__sec">
+            <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">1</span><h4>Patient details</h4></div>
+            <div className="seg" role="group" aria-label="Patient type">
+              <button type="button" className={walkInMode ? 'seg__btn is-on' : 'seg__btn'} aria-pressed={walkInMode} onClick={() => setBook(b => ({ ...b, patient_id: '' }))}>Walk-in</button>
+              <button type="button" className={!walkInMode ? 'seg__btn is-on' : 'seg__btn'} aria-pressed={!walkInMode} disabled={!patients.length}
+                onClick={() => setBook(b => ({ ...b, patient_id: b.patient_id || (patients[0] ? String(patients[0].id) : '') }))}>Registered{!patients.length ? ' · none' : ''}</button>
+            </div>
+            {walkInMode ? (
+              <div className="dash-fields">
+                <label className="dash-field">First name<input value={book.fname} onChange={e => setBook({ ...book, fname: e.target.value })} required autoComplete="given-name" /></label>
+                <label className="dash-field">Last name<input value={book.lname} onChange={e => setBook({ ...book, lname: e.target.value })} autoComplete="family-name" /></label>
+                <label className="dash-field">Mobile no<input value={book.phone} onChange={e => setBook({ ...book, phone: e.target.value })} type="tel" placeholder="e.g. 9810022223" pattern="[0-9+\-\s]{7,15}" autoComplete="tel" /></label>
+                <label className="dash-field">Email<input value={book.email} onChange={e => setBook({ ...book, email: e.target.value })} type="email" placeholder="name@example.com" autoComplete="email" /></label>
+                <label className="dash-field dbk-doc">Doctor name<input value={me.name} readOnly disabled title="Appointments are booked under your signed-in account" /></label>
+                <label className="dash-field dbk-doc">Date of visit<input value={prettyDate(book.date)} readOnly disabled /></label>
+                <label className="dash-field wide">Address<input value={book.address} onChange={e => setBook({ ...book, address: e.target.value })} placeholder="House no, street, city" autoComplete="street-address" /></label>
+              </div>
+            ) : (
+              <>
+                <label className="dash-book__field">Registered patient
+                  <select value={book.patient_id} onChange={e => setBook({ ...book, patient_id: e.target.value })} required>
+                    {patients.map(p => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` · ${p.phone}` : ''}</option>)}
+                  </select>
                 </label>
-              </section>
-
-              <section className="dash-book__sec">
-                <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">3</span><h4>Visit</h4><small>duration & reason</small></div>
-                <div className="durchips" role="group" aria-label="Duration">
-                  {[15, 30, 45, 60].map(m => (
-                    <button key={m} type="button" className={+book.minutes === m ? 'durchip is-on' : 'durchip'} onClick={() => setBook(b => ({ ...b, minutes: m }))}>{m} min</button>
-                  ))}
+                <div className="dash-fields">
+                  <label className="dash-field dbk-doc">Doctor name<input value={me.name} readOnly disabled title="Appointments are booked under your signed-in account" /></label>
                 </div>
-                <label className="dash-book__field">Reason
-                  <input value={book.reason} onChange={e => setBook({ ...book, reason: e.target.value })} placeholder="e.g. Consultation" />
-                </label>
-                {treatments.length > 0 && (
-                  <div className="reasonchips" aria-label="Quick reasons">
-                    {treatments.slice(0, 8).map(t => (
-                      <button key={t.id} type="button" className={book.reason === t.name ? 'reasonchip is-on' : 'reasonchip'}
-                        title={`Typically ${t.default_minutes} min`}
-                        onClick={() => setBook(b => ({ ...b, reason: t.name, minutes: t.default_minutes || b.minutes }))}>{t.name}</button>
-                    ))}
-                  </div>
-                )}
-              </section>
+              </>
+            )}
+            <label className="dash-book__field">Disease / reason
+              <input value={book.reason} onChange={e => setBook({ ...book, reason: e.target.value })} placeholder="e.g. tooth pain, checkup…" />
+            </label>
+            {treatments.length > 0 && (
+              <div className="reasonchips" aria-label="Quick reasons">
+                {treatments.slice(0, 8).map(t => (
+                  <button key={t.id} type="button" className={book.reason === t.name ? 'reasonchip is-on' : 'reasonchip'}
+                    title={`Typically ${t.default_minutes} min`}
+                    onClick={() => setBook(b => ({ ...b, reason: t.name, minutes: t.default_minutes || b.minutes }))}>{t.name}</button>
+                ))}
+              </div>
+            )}
+            <p className="dash-book-note">Walk-ins with a mobile number are registered automatically (an existing number is reused, so the visit links to their record).</p>
+          </section>
 
-              {bookErr && <p className="dash-book__err" role="alert"><AlertTriangle size={15} /> {bookErr}</p>}
+          <section className="dash-book__sec">
+            <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">2</span><h4>Day & time</h4><small>your working hours only</small></div>
+            <div className="daychips">
+              <button type="button" className={book.date === today() ? 'daychip is-on' : 'daychip'} onClick={() => setBook(b => ({ ...b, date: today() }))}>Today</button>
+              <button type="button" className={book.date === tomorrow() ? 'daychip is-on' : 'daychip'} onClick={() => setBook(b => ({ ...b, date: tomorrow() }))}>Tomorrow</button>
+              <input type="date" value={book.date} onChange={e => setBook({ ...book, date: e.target.value })} required aria-label="Pick a date" />
             </div>
 
-            <aside className="dash-book__ticket">
-              <span className="dash-book__ticket-eyebrow">APPOINTMENT PREVIEW</span>
-              <div className="dash-ticket-card">
-                <div className="dash-ticket-pat">
-                  <span className="avatar" aria-hidden="true">{initial(ticketName)}</span>
-                  <div>
-                    <small>{walkInMode ? 'Walk-in' : 'Registered'}</small>
-                    <b>{ticketName || '— add a name —'}</b>
-                  </div>
-                </div>
-                <div className="dash-ticket-rows">
-                  <span className="dash-ticket-row"><Calendar size={15} /> {prettyDate(book.date)} <small>day</small></span>
-                  <span className="dash-ticket-row"><Clock size={15} /> {fmt12(book.time)} – {fmt12(ticketEnd)} <small>{book.minutes} min</small></span>
-                  <span className="dash-ticket-row"><ClipboardList size={15} /> <span className="dash-ticket-reason">{book.reason || 'Consultation'}</span> <small>reason</small></span>
-                </div>
+            {slots === undefined && (
+              <div className="slotgrid" aria-hidden="true">{Array.from({ length: 8 }).map((_, i) => <span key={i} className="slotchip slotchip--skeleton" />)}</div>
+            )}
+            {Array.isArray(slots) && slots.length > 0 && (<>
+              <p className="slotnote">{slots.length} free slot{slots.length === 1 ? '' : 's'} on {prettyDate(book.date)}</p>
+              <div className="slotgrid">
+                {slots.map(s => (
+                  <button key={s.time} type="button" className={book.time === s.time ? 'slotchip is-on' : 'slotchip'} onClick={() => setBook(b => ({ ...b, time: s.time }))}>{fmt12(s.time)}</button>
+                ))}
               </div>
-              <button type="submit" className="dash-book__cta"><CalendarCheck size={17} /> Confirm appointment</button>
-              <button type="button" className="dash-book__ghost" onClick={() => setBookOpen(false)}>Discard</button>
-            </aside>
+            </>)}
+            {Array.isArray(slots) && slots.length === 0 && (
+              <p className="slotempty">Fully booked or a day off — pick another day, or type a custom time below.</p>
+            )}
+            <label className="dash-book__custom">Custom start time
+              <input type="time" value={book.time} onChange={e => setBook({ ...book, time: e.target.value })} required />
+            </label>
+          </section>
+
+          <section className="dash-book__sec">
+            <div className="dash-book__sec-head"><span className="secnum" aria-hidden="true">3</span><h4>Visit length</h4><small>duration</small></div>
+            <div className="durchips" role="group" aria-label="Duration">
+              {[15, 30, 45, 60].map(m => (
+                <button key={m} type="button" className={+book.minutes === m ? 'durchip is-on' : 'durchip'} onClick={() => setBook(b => ({ ...b, minutes: m }))}>{m} min</button>
+              ))}
+            </div>
+          </section>
+
+          {bookErr && <p className="dash-book__err" role="alert"><AlertTriangle size={15} /> {bookErr}</p>}
+
+          <div className="dash-book__foot">
+            <button type="submit" className="dash-book__submit" disabled={bookBusy}>
+              <CalendarCheck size={17} /> {bookBusy ? 'Booking…' : 'Book appointment'}
+            </button>
           </div>
         </form>
       )}
 
-      {addOpen && (activeSection === 'overview' || activeSection === 'patients') && isDentist && (
+      {addOpen && (activeSection === 'overview' || activeSection === 'patients') && me.role === 'dentist' && (
         <form className="panel rowForm dash-form" onSubmit={addNewPatient} aria-label="Add patient">
           <div className="dash-form-head">
             <span className="dash-form-icon" aria-hidden="true"><UserRound size={20} /></span>
             <div>
               <h3>Add patient</h3>
-              <p>New faces take less than a minute to register.</p>
+              <p>Register a new patient in the clinic.</p>
             </div>
           </div>
           <div className="rowForm grid3">
@@ -546,16 +489,23 @@ export default function Dashboard({ me, onChat, onLogout }) {
             <div><span className="panel-eyebrow">YOUR SCHEDULE</span><h3>Appointments</h3></div>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Appointment date" />
           </div>
-          {appts.length === 0 && <p className="empty"><CalendarCheck size={22} /> No appointments this day — enjoy the quiet.</p>}
+          {appts.length === 0 && <p className="empty"><CalendarCheck size={22} /> No appointments today.</p>}
           <ul className="list apptlist">
             {appts.map(a => (
               <li key={a.id} className="appt">
                 <span className="timechip">{fmt12(a.start_time)}<small>{fmt12(a.end_time)}</small></span>
-                <span className="ref-row-avatar" aria-hidden="true">{initial(a.patient_name)}</span>
+                <PatAvatar name={a.patient_name} />
                 <span className="apptbody">
                   <b>{a.patient_name || 'Walk-in'}</b>
                   {a.source === 'public' && <span className="badge">public</span>}
                   <span className="muted"> — {a.reason || 'Consultation'}</span>
+                  {(a.email || a.address) && (
+                    <span className="muted appt-contact">
+                      {a.email && <span title="Email">{a.email}</span>}
+                      {a.email && a.address && <span className="appt-sep">·</span>}
+                      {a.address && <span title="Address">{a.address}</span>}
+                    </span>
+                  )}
                   <span className="rowgap">
                     {a.status === 'scheduled' && <button type="button" className="mini mini--ok" onClick={() => setStatus(a.id, 'completed')}><Check size={13} /> complete</button>}
                     {a.status === 'scheduled' && <button type="button" className="mini mini--warn" onClick={() => setStatus(a.id, 'no_show')}><Clock size={13} /> no-show</button>}

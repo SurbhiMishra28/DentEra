@@ -29,6 +29,12 @@ db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
 try { db.exec('ALTER TABLE appointments ADD COLUMN patient_phone TEXT'); }
 catch (e) { if (!/duplicate column name/i.test(e.message)) console.warn('[dentera] patient_phone migration skipped:', e.message); }
 
+// additive migrations (idempotent): booking forms collect email + address on the appointment
+for (const col of ['email TEXT', 'address TEXT']) {
+  try { db.exec(`ALTER TABLE appointments ADD COLUMN ${col}`); }
+  catch (e) { if (!/duplicate column name/i.test(e.message)) console.warn(`[dentera] ${col.split(' ')[0]} migration skipped:`, e.message); }
+}
+
 // ---------------- helpers (Era's local-date logic — never toISOString for day math) ----------------
 const pad2 = n => String(n).padStart(2, '0');
 const localDay = off => { const d = new Date(); d.setDate(d.getDate() + (off || 0));

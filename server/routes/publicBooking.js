@@ -53,6 +53,8 @@ router.post('/public/booking', h((req, res, reqId) => {
   const name = String(b.name || '').trim().slice(0, 120);
   const phone = String(b.phone || '').trim();
   const reason = String(b.reason || '').trim().slice(0, 200);
+  const email = b.email ? String(b.email).trim().slice(0, 120) : null;
+  const address = b.address ? String(b.address).trim().slice(0, 300) : null;
   if (!dentistId || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time))
     throw Object.assign(new Error('dentist, date (YYYY-MM-DD) and time (HH:MM) are required.'), { status: 400, err: 'BAD_REQUEST' });
   if (!name) throw Object.assign(new Error('Please tell us your name.'), { status: 400, err: 'BAD_REQUEST' });
@@ -67,8 +69,8 @@ router.post('/public/booking', h((req, res, reqId) => {
   if (clash) { audit(null, null, 'public_booking_clash', null, reqId, false, date + ' ' + time, 'booking', dentistId);
     return res.status(409).json({ ok: false, error: 'SLOT_TAKEN', message: 'That slot was just taken — please pick another.' }); }
   // store the last 10 digits so "+91 98100 12345" and "9810012345" track the same booking
-  const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,patient_phone,appointment_date,start_time,end_time,status,reason,source)
-    VALUES (?,?,?,?,?,?,?,'scheduled',?,'public')`).run(dentistId, null, name, last10(phone), date, time, end, reason || 'Booking via website').lastInsertRowid;
+  const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,patient_phone,appointment_date,start_time,end_time,status,reason,email,address,source)
+    VALUES (?,?,?,?,?,?,?,'scheduled',?,?,?,'public')`).run(dentistId, null, name, last10(phone), date, time, end, reason || 'Booking via website', email, address).lastInsertRowid;
   audit(null, null, 'public_booking', null, reqId, true, name + ' ' + date + ' ' + time, 'booking', id);
   res.status(201).json({ ok: true, data: { id, date, time, name, phone: last10(phone) } });
 }));

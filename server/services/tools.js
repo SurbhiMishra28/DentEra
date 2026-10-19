@@ -23,7 +23,7 @@ const tools = {
 
   getMyAppointments(u, { date, upcoming } = {}) {
     const d = u.dentistId;
-    let sql = `SELECT id,appointment_date,start_time,end_time,status,reason,patient_id,patient_name,source
+    let sql = `SELECT id,appointment_date,start_time,end_time,status,reason,email,address,patient_id,patient_name,source
       FROM appointments WHERE dentist_id=?`;
     const p = [d];
     if (/^\d{4}-\d{2}-\d{2}$/.test(date || '')) { sql += ' AND appointment_date=?'; p.push(date); }
@@ -38,7 +38,7 @@ const tools = {
 
   getMyPatients(u, { q } = {}) {
     const like = `%${String(q || '').trim()}%`;
-    return db.prepare(`SELECT p.id,p.name,p.dob,p.phone,p.gender,p.medical_notes
+    return db.prepare(`SELECT p.id,p.name,p.dob,p.phone,p.gender,p.medical_notes,p.created_at
       FROM patients p JOIN dentist_patients dp ON dp.patient_id=p.id
       WHERE dp.dentist_id=? AND (?='%' OR p.name LIKE ? OR p.phone LIKE ?) ORDER BY p.name LIMIT 100`)
       .all(u.dentistId, like, like, like);
@@ -107,7 +107,7 @@ const tools = {
     return slots;
   },
 
-  createAppointment(u, { date, start_time, end_time, patient_id, patient_name, reason } = {}) {
+  createAppointment(u, { date, start_time, end_time, patient_id, patient_name, reason, email, address } = {}) {
     const d = u.dentistId;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) throw httpErr(400, 'BAD_REQUEST', 'A valid date (YYYY-MM-DD) is required.');
     if (!/^\d{2}:\d{2}$/.test(start_time || '')) throw httpErr(400, 'BAD_REQUEST', 'A valid start time (HH:MM) is required.');
@@ -117,8 +117,11 @@ const tools = {
     if (!pid && !pname) throw httpErr(400, 'BAD_REQUEST', 'A patient_id or patient_name is required.');
     if (end <= start_time) throw httpErr(400, 'BAD_REQUEST', 'End time must be after start time.');
     if (slotClash(d, date, start_time, end)) throw httpErr(409, 'SLOT_TAKEN', 'That time overlaps an appointment already booked.');
-    const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,appointment_date,start_time,end_time,status,reason,source)
-      VALUES (?,?,?,?,?,?, 'scheduled', ?, 'doctor')`).run(d, pid, pname, date, start_time, end, String(reason || 'Consultation').slice(0, 200)).lastInsertRowid;
+    const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,appointment_date,start_time,end_time,status,reason,email,address,source)
+      VALUES (?,?,?,?,?,?, 'scheduled', ?, ?, ?, 'doctor')`).run(d, pid, pname, date, start_time, end,
+        String(reason || 'Consultation').slice(0, 200),
+        email ? String(email).trim().slice(0, 120) : null,
+        address ? String(address).trim().slice(0, 300) : null).lastInsertRowid;
     return { created: true, appointment_id: id };
   },
 

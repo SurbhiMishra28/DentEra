@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
-import { Tooth, Sparkles, Check, Calendar, Clock, Lock, ChevronRight, Search } from '../components/Icons.jsx'
+import { Tooth, Sparkles, CalendarCheck, Lock, Search } from '../components/Icons.jsx'
 import './publicbooking.css'
 
-// Public booking — a full page (not a cramped card): progress rail, dentist cards,
-// roomy date/slot grids, then a summary + details. API contract unchanged.
+// Public booking — "Online Dental Appointment Form": plain clinic booking form.
+// The API contract (pinned by tests) needs dentist_id + phone + a concrete free
+// slot, so the form carries "Preferred dentist", "Preferred Appointment Date/Time"
+// and a phone field; the intake answers (birth date, first visit, symptoms,
+// recent hospital stay) are folded into the `reason` text the clinic sees.
 const fmt12 = t => { const [h, m] = (t || '').split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ap}` }
 const plusDays = n => { const d = new Date(); d.setDate(d.getDate() + n)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
@@ -12,25 +15,25 @@ const parts = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if
   return new Date(+m[1], +m[2] - 1, +m[3]) }
 const dateLabel = iso => { if (iso === plusDays(1)) return 'Tomorrow'
   const d = parts(iso); return d ? d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : iso }
-const dateSub = iso => { const d = parts(iso); return d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '' }
 const niceLong = iso => { const d = parts(iso); return d ? d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }) : iso }
-// Dentist 1 (general) works Mon–Fri, Dentist 2 (ortho) Tue–Sat — the booking
-// picker must start on a day that at least one of them actually works.
+// Dentist 1 (general) works Mon–Fri, Dentist 2 (ortho) Tue–Sat — the form must
+// default to a day that at least one of them actually works.
 const firstOpenDay = () => { const d = new Date(); d.setDate(d.getDate() + 1); while (d.getDay() === 0) d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 
 const DENTISTS = [
-  { id: 1, name: 'Dr. Meera Iyer', spec: 'General Dentistry', room: 'OPD-1' },
-  { id: 2, name: 'Dr. Arjun Shah', spec: 'Orthodontics', room: 'OPD-2' }
+  { id: 1, name: 'Dr. Meera Iyer', spec: 'General Dentistry' },
+  { id: 2, name: 'Dr. Arjun Shah', spec: 'Orthodontics' }
 ]
-const STEPS = ['Dentist', 'Date', 'Slot', 'Details']
 
 export default function PublicBooking() {
-  const [step, setStep] = useState(1)
-  const [dentist, setDentist] = useState(null)
+  const [dentistId, setDentistId] = useState(1)
   const [date, setDate] = useState(firstOpenDay())
+  const [slot, setSlot] = useState('') // '' = earliest available
   const [slots, setSlots] = useState([])
-  const [slot, setSlot] = useState(null)
+  const [slotMsg, setSlotMsg] = useState('')
+  const [slotNonce, setSlotNonce] = useState(0) // bump to refetch after a 409 clash
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
   const [trackPhone, setTrackPhone] = useState('')
   const [trackRes, setTrackRes] = useState(null)
@@ -38,6 +41,22 @@ export default function PublicBooking() {
   const [trackBusy, setTrackBusy] = useState(false)
 
   useEffect(() => { fetch('/api/health').catch(() => {}) }, [])
+
+  // free slots for the chosen dentist + date (Sunday needs no request — clinic is closed)
+  useEffect(() => {
+    let live = true
+    setSlots([]); setSlot(''); setSlotMsg('')
+    if (!dentistId || !date) return
+    if (parts(date)?.getDay() === 0) { setSlotMsg('The clinic is closed on Sundays — please pick another day.'); return }
+    api.get(`/api/public/slots?dentist=${dentistId}&date=${date}`).then(({ status, data }) => {
+      if (!live) return
+      if (status === 200) {
+        setSlots(data.data || [])
+        if (!(data.data || []).length) setSlotMsg('No free slots that day — please pick another date.')
+      } else setSlotMsg(data.message || 'Could not load slots — please try again.')
+    }).catch(() => { if (live) setSlotMsg('Could not load slots — please try again.') })
+    return () => { live = false }
+  }, [dentistId, date, slotNonce])
 
   async function track(e) {
     e.preventDefault(); setTrackMsg(''); setTrackRes(null); setTrackBusy(true)
@@ -49,22 +68,33 @@ export default function PublicBooking() {
     } else setTrackMsg(data.message || 'Could not look up your booking.')
   }
 
-  async function pickDentist(d) { setDentist(d); setStep(2) }
-  async function pickDate(d) {
-    setDate(d); setErr(''); setSlots([]); setSlot(null)
-    const { status, data } = await api.get(`/api/public/slots?dentist=${dentist.id}&date=${d}`)
-    if (status === 200) { setSlots(data.data || []); setStep(3) }
-    else setErr(data.message || 'Could not load slots.')
-  }
-  function pickSlot(t) { setSlot(t); setStep(4) }
   async function submit(e) {
     e.preventDefault(); setErr('')
+    const fd = new FormData(e.target)
+    const first = String(fd.get('fname') || '').trim(), last = String(fd.get('lname') || '').trim()
+    const name = [first, last].filter(Boolean).join(' ')
+    const birth = String(fd.get('birth') || '').trim()
+    const phone = String(fd.get('phone') || '').trim()
+    const yn = k => { const v = fd.get(k); return v ? (v === 'yes' ? 'Yes' : 'No') : '' }
+    const time = slot || (slots[0] ? slots[0].time : '')
+    if (!time) { setErr('No free slots on that date — please pick another day.'); return }
+    setBusy(true)
+    const email = f.email.value.trim(), address = f.address.value.trim()
+    const bits = [
+      birth && `Birth date: ${birth}`,
+      yn('firstVisit') && `First visit: ${yn('firstVisit')}`,
+      yn('fever') && `Fever 38+: ${yn('fever')}`,
+      yn('vomiting') && `Vomiting: ${yn('vomiting')}`,
+      yn('cough') && `Cough: ${yn('cough')}`,
+      yn('discharged') && `Hospital last 14 days: ${yn('discharged')}`
+    ].filter(Boolean)
+    const reason = ['Website request', ...bits].join(' — ').slice(0, 200)
     const { status, data } = await api.post('/api/public/booking', {
-      dentist_id: dentist.id, date, time: slot, name: e.target.name.value.trim(),
-      phone: e.target.phone.value.trim(), reason: e.target.reason.value.trim()
+      dentist_id: dentistId, date, time, name, phone, email, address, reason
     })
-    if (status === 201) setDone({ date, time: slot, name: e.target.name.value.trim(), phone: e.target.phone.value.trim() })
-    else if (status === 409) { setErr(data.message || 'That slot was just taken.'); setSlots(s => s.filter(x => x.time !== slot)); setSlot(null); setStep(3) }
+    setBusy(false)
+    if (status === 201) setDone({ date, time, name, phone })
+    else if (status === 409) { setErr(data.message || 'That slot was just taken — please pick another time.'); setSlotNonce(n => n + 1) }
     else setErr(data.message || 'Booking failed.')
   }
 
@@ -92,110 +122,124 @@ export default function PublicBooking() {
         </div>
       ) : (
         <div className="bookmain">
-          <header className="bookhero">
-            <span className="book-kicker"><Sparkles size={13} /> Online booking</span>
-            <h1>Book an <em className="book-serif">appointment</em></h1>
-            <p className="muted">No account needed — your phone number is used only for this appointment.</p>
-          </header>
+          <section className="medcard" aria-label="Online dental appointment form">
+            <h1 className="medtitle">Online Dental Appointment Form</h1>
 
-          <ol className="prosteps" aria-label="Booking steps">
-            {STEPS.map((s, i) => (
-              <li key={s} className={step > i + 1 ? 'done' : step === i + 1 ? 'on' : ''}>
-                <span className="pronum">{step > i + 1 ? <Check size={13} /> : i + 1}</span>
-                <span className="proname">{s}</span>
-              </li>
-            ))}
-          </ol>
+            <form onSubmit={submit} className="medgrid">
+              <div className="medblock full">
+                <span className="medlabel">Your name:</span>
+                <div className="medpair">
+                  <input className="medinput" name="fname" placeholder="First" required aria-label="First name" autoComplete="given-name" />
+                  <input className="medinput" name="lname" placeholder="Last" aria-label="Last name" autoComplete="family-name" />
+                </div>
+              </div>
 
-          <section className="panel bookcard">
-            {step === 1 && (
-              <>
-                <h3>Choose your dentist</h3>
-                <div className="dentcards">
-                  {DENTISTS.map(d => (
-                    <button key={d.id} type="button" className="dentcard" onClick={() => pickDentist(d)}>
-                      <span className="avatar big">{d.name.replace('Dr. ', '')[0]}</span>
-                      <span className="dentbody">
-                        <b>{d.name}</b>
-                        <span className="muted">{d.spec} · {d.room}</span>
-                      </span>
-                      <span className="chev"><ChevronRight size={16} /></span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+              <label className="medblock full">
+                <span className="medlabel">Birth date:</span>
+                <input className="medinput" name="birth" type="date" aria-label="Birth date" />
+              </label>
 
-            {step === 2 && dentist && (
-              <>
-                <h3>Pick a day <span className="muted">· with {dentist.name}</span></h3>
-                <div className="dategrid2">
-                  {Array.from({ length: 14 }, (_, i) => plusDays(i + 1)).map(d => {
-                    const sun = parts(d)?.getDay() === 0
-                    return (
-                      <button key={d} type="button" disabled={sun} className={'datecell' + (d === date ? ' on' : '')}
-                        title={sun ? 'Clinic closed on Sunday' : undefined}
-                        onClick={() => pickDate(d)}
-                        style={sun ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
-                        <b>{d === firstOpenDay() ? 'Earliest' : parts(d)?.toLocaleDateString('en-IN', { weekday: 'short' })}</b>
-                        <span>{dateSub(d)}</span>
-                      </button>
-                    )
-                  })}
+              <div className="medblock full" role="radiogroup" aria-label="Is this your first visit?">
+                <span className="medlabel">Is this your first visit:</span>
+                <div className="medradios">
+                  <label className="medradio"><input type="radio" name="firstVisit" value="yes" /> Yes</label>
+                  <label className="medradio"><input type="radio" name="firstVisit" value="no" /> No</label>
                 </div>
-                <button type="button" className="linkbtn" onClick={() => setStep(1)}>← change dentist</button>
-              </>
-            )}
+              </div>
 
-            {step === 3 && (
-              <>
-                <h3>Pick a time <span className="muted">· {dateLabel(date)}</span></h3>
-                {slots.length === 0 && <p className="empty">No free slots that day — try another date.</p>}
-                <div className="slotgrid">
-                  {slots.map(s => (
-                    <button key={s.time} type="button" className={'slotcell' + (slot === s.time ? ' on' : '')} onClick={() => pickSlot(s.time)}>
-                      {fmt12(s.time)}
-                    </button>
-                  ))}
-                </div>
-                <div className="rowgap">
-                  <button type="button" className="linkbtn" onClick={() => setStep(2)}>← change date</button>
-                </div>
-              </>
-            )}
+              <label className="medblock full">
+                <span className="medlabel">Name the doctor you want to visit:</span>
+                <select className="medinput" value={dentistId} onChange={e => setDentistId(+e.target.value)} aria-label="Preferred dentist">
+                  {DENTISTS.map(d => <option key={d.id} value={d.id}>{d.name} — {d.spec}</option>)}
+                </select>
+              </label>
 
-            {step === 4 && dentist && slot && (
-              <>
-                <h3>Almost done — your details</h3>
-                <div className="sumcard">
-                  <span><Tooth size={15} /> <b>{dentist.name}</b> · {dentist.spec}</span>
-                  <span><Calendar size={15} /> <b>{dateLabel(date)}</b> ({niceLong(date)})</span>
-                  <span><Clock size={15} /> <b>{fmt12(slot)}</b></span>
+              <div className="medblock full" role="group" aria-label="Do you have any of the below?">
+                <span className="medlabel">Do you have any of the below:</span>
+                <div className="medtable">
+                  <span aria-hidden="true" />
+                  <span className="medth">Yes</span>
+                  <span className="medth">No</span>
+
+                  <span className="medq">Fever 38° or greater:</span>
+                  <label className="medcell"><input type="radio" name="fever" value="yes" aria-label="Fever — yes" /></label>
+                  <label className="medcell"><input type="radio" name="fever" value="no" aria-label="Fever — no" /></label>
+
+                  <span className="medq">Vomiting:</span>
+                  <label className="medcell"><input type="radio" name="vomiting" value="yes" aria-label="Vomiting — yes" /></label>
+                  <label className="medcell"><input type="radio" name="vomiting" value="no" aria-label="Vomiting — no" /></label>
+
+                  <span className="medq">Cough:</span>
+                  <label className="medcell"><input type="radio" name="cough" value="yes" aria-label="Cough — yes" /></label>
+                  <label className="medcell"><input type="radio" name="cough" value="no" aria-label="Cough — no" /></label>
                 </div>
-                <form onSubmit={submit} className="bookform">
-                  <label>Your name<input name="name" placeholder="e.g. Ravi Kumar" required minLength={2} /></label>
-                  <label>Phone<input name="phone" placeholder="e.g. 9810022223" required pattern="[0-9+\-\s]{7,15}" /></label>
-                  <label>Reason (optional)<input name="reason" placeholder="e.g. tooth pain, checkup…" /></label>
-                  <div className="rowgap">
-                    <button type="submit">Confirm booking</button>
-                    <button type="button" className="linkbtn" onClick={() => { setStep(3); setSlot(null) }}>← change slot</button>
-                  </div>
-                </form>
-              </>
-            )}
-            {err && <p className="err">{err}</p>}
+              </div>
+
+              <div className="medblock full" role="group" aria-label="Please answer the following">
+                <span className="medlabel">Please answer the following:</span>
+                <div className="medtable">
+                  <span aria-hidden="true" />
+                  <span className="medth">Yes</span>
+                  <span className="medth">No</span>
+
+                  <span className="medq">Have you been discharged from hospital in the last 14 days?</span>
+                  <label className="medcell"><input type="radio" name="discharged" value="yes" aria-label="Discharged from hospital — yes" /></label>
+                  <label className="medcell"><input type="radio" name="discharged" value="no" aria-label="Discharged from hospital — no" /></label>
+                </div>
+              </div>
+
+              <label className="medblock full">
+                <span className="medlabel">Preferred Appointment Date:</span>
+                <input className="medinput" name="date" type="date" required
+                  min={firstOpenDay()} max={plusDays(14)}
+                  value={date} onChange={e => setDate(e.target.value)} aria-label="Preferred appointment date" />
+              </label>
+
+              <label className="medblock full">
+                <span className="medlabel">Preferred Appointment Time:</span>
+                <select className="medinput" value={slot} onChange={e => setSlot(e.target.value)}
+                  disabled={!slots.length} aria-label="Preferred appointment time">
+                  {slots.length
+                    ? <option value="">Earliest available ({fmt12(slots[0].time)})</option>
+                    : <option value="">{date ? 'No free slots — pick another date' : 'Pick a date first'}</option>}
+                  {slots.map(s => <option key={s.time} value={s.time}>{fmt12(s.time)}</option>)}
+                </select>
+              </label>
+
+              <label className="medblock full">
+                <span className="medlabel">Your phone:</span>
+                <input className="medinput" name="phone" type="tel" required
+                  pattern="[0-9+\-\s]{7,15}" placeholder="e.g. 9810022223"
+                  aria-label="Your phone" autoComplete="tel" />
+              </label>
+
+              {slotMsg && <p className="medhint full" role="status">{slotMsg}</p>}
+              {err && <p className="err full">{err}</p>}
+
+              <div className="medactions full">
+                <button type="submit" className="medbtn" disabled={busy || (!!date && !slots.length)}>
+                  <CalendarCheck size={17} /> {busy ? 'Scheduling…' : 'Schedule Appointment'}
+                </button>
+              </div>
+            </form>
           </section>
 
-          <section className="panel bookcard" style={{ marginTop: '1.1rem' }} aria-label="Track an existing booking">
-            <h3><Search size={17} /> Track your booking</h3>
-            <p className="muted" style={{ marginTop: 0, marginBottom: '.8rem' }}>
-              Already booked? Enter the phone number you used — we'll show your upcoming appointments.
-            </p>
-            <form onSubmit={track} className="bookform" style={{ maxWidth: 420 }} noValidate={false}>
-              <label>Phone<input value={trackPhone} onChange={e => setTrackPhone(e.target.value)} placeholder="e.g. 9810022223" required pattern="[0-9+\-\s]{7,15}" /></label>
-              <div className="rowgap"><button type="submit" disabled={trackBusy}>{trackBusy ? 'Looking…' : 'Find my booking'}</button></div>
+          <section className="medcard trackcard" aria-label="Track an existing booking">
+            <h3 className="medtrackhead"><Search size={17} /> Track your booking</h3>
+            <p className="medmuted">Already booked? Enter the phone number you used — we'll show your upcoming appointments.</p>
+            <form onSubmit={track} className="medtrackform">
+              <label className="medblock">
+                <span className="medlabel">Phone:</span>
+                <input className="medinput" value={trackPhone} onChange={e => setTrackPhone(e.target.value)}
+                  placeholder="e.g. 9810022223" required pattern="[0-9+\-\s]{7,15}" />
+              </label>
+              <div>
+                <button type="submit" className="medbtn ghost" disabled={trackBusy}>
+                  {trackBusy ? 'Looking…' : 'Find my booking'}
+                </button>
+              </div>
             </form>
-            {trackMsg && <p className="muted" role="status">{trackMsg}</p>}
+            {trackMsg && <p className="medmuted" role="status" style={{ margin: '0.9rem 0 0' }}>{trackMsg}</p>}
             {trackRes && trackRes.length > 0 && (
               <ul className="list" style={{ marginTop: '.9rem' }}>
                 {trackRes.map((r, i) => (

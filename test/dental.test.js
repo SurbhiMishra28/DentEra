@@ -153,6 +153,44 @@ test('public booking: 6th attempt in 10 min → 429', async () => {
   assert.strictEqual(last, 429, 'the limiter must trip after 5 attempts');
 });
 
+// ---------- booking contact fields (email / address) ----------
+// fresh-IP public attempts (the public route is rate-limited 5/10min/IP — a unique IP gets a fresh bucket)
+const PUBLIC_IP = '203.0.113.11';
+const pad2 = n => String(n).padStart(2, '0');
+// a :30 slot nobody has taken for dentist 1 tomorrow
+function freeTime() {
+  const busy = new Set(db.prepare("SELECT start_time FROM appointments WHERE dentist_id=1 AND appointment_date=? AND status!='cancelled'").all(TOMORROW).map(r => r.start_time));
+  for (let h = 8; h < 20; h++) { const t = `${pad2(h)}:30`; if (!busy.has(t)) return t; }
+  return null;
+}
+const end30 = t => { const [h, m] = t.split(':').map(Number); const s = h * 60 + m + 30; return `${pad2(Math.floor(s / 60) % 24)}:${pad2(s % 60)}` };
+
+test('public: booking stores email + address on the appointment row', async () => {
+  const time = freeTime();
+  const r = await request(app).post('/api/public/booking').set('x-forwarded-for', PUBLIC_IP).send({
+    dentist_id: 1, date: TOMORROW, time, name: 'Email Test', phone: '9810033333',
+    email: 'email.test@example.com', address: '12 Hill Road, Pune' });
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  const row = db.prepare('SELECT email,address FROM appointments WHERE id=?').get(r.body.data.id);
+  assert.strictEqual(row.email, 'email.test@example.com');
+  assert.strictEqual(row.address, '12 Hill Road, Pune');
+  db.prepare('DELETE FROM appointments WHERE id=?').run(r.body.data.id); // keep the scratch DB tidy for later tests
+});
+
+test('appointment: doctor booking with email + address is listed back', async () => {
+  const time = freeTime();
+  const r = await agent.post('/api/appointments').send({
+    patient_name: 'Clinic Test', date: TOMORROW, start_time: time, end_time: end30(time),
+    reason: 'Checkup', email: 'clinic.test@example.com', address: '99 Park Lane, Nagpur' });
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  const id = r.body.data.appointment_id;
+  const list = await agent.get(`/api/appointments?date=${TOMORROW}`);
+  const row = list.body.data.find(a => a.id === id);
+  assert.ok(row, 'the new appointment must be listed');
+  assert.strictEqual(row.email, 'clinic.test@example.com');
+  assert.strictEqual(row.address, '99 Park Lane, Nagpur');
+});
+
 // ---------- plans + invoices (BE6) ----------
 test('plan: one transaction creates plan+items+invoice; item done recompute; invoice paid', async () => {
   const mk = await agent.post('/api/plans').send({ patient_id: 2, title: 'Test plan', items: [

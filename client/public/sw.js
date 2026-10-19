@@ -5,7 +5,7 @@
    - /api/*: never cached (live clinic data + auth cookies)
    - offline fallback page for navigations when the network is gone      */
 'use strict';
-const VERSION = 'dentera-v2';
+const VERSION = 'dentera-v3';
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const IMAGES = `${VERSION}-images`;
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
-        .then((res) => { event.waitUntil(caches.open(SHELL).then((c) => c.put(req, res.clone()))); return res; })
+        .then((res) => { const copy = res.clone(); event.waitUntil(caches.open(SHELL).then((c) => c.put(req, copy))); return res; })
         .catch(async () => (await caches.match(req, { ignoreSearch: true })) || caches.match(OFFLINE_URL))
     );
     return;
@@ -54,7 +54,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(req).then((cached) => {
         const refresh = fetch(req).then((res) => {
-          event.waitUntil(caches.open(ASSETS).then((c) => c.put(req, res.clone())));
+          const copy = res.clone(); // clone synchronously — a lazy clone throws "body is already used"
+          event.waitUntil(caches.open(ASSETS).then((c) => c.put(req, copy)));
           return res;
         }).catch(() => cached);
         return cached || refresh;
@@ -69,7 +70,8 @@ self.addEventListener('fetch', (event) => {
     fetch(req)
       .then((res) => {
         if (res.ok) {
-          event.waitUntil(caches.open(IMAGES).then((c) => c.put(req, res.clone())));
+          const copy = res.clone(); // clone synchronously — a lazy clone throws "body is already used"
+          event.waitUntil(caches.open(IMAGES).then((c) => c.put(req, copy)));
           const cachePromise = caches.open(IMAGES).then(async (c) => {
             const keys = await c.keys();
             if (keys.length > 60) await c.delete(keys[0]);
