@@ -5,8 +5,6 @@ const express = require('express');
 const { db, localDay } = require('../db/connection');
 const { h } = require('../middleware/helpers');
 const { audit } = require('../services/audit');
-const { push } = require('../services/notify');
-const reminders = require('../services/reminders');
 const { addMin } = require('../services/tools');
 
 const router = express.Router();
@@ -74,10 +72,6 @@ router.post('/public/booking', h((req, res, reqId) => {
   const id = db.prepare(`INSERT INTO appointments(dentist_id,patient_id,patient_name,patient_phone,appointment_date,start_time,end_time,status,reason,email,address,source)
     VALUES (?,?,?,?,?,?,?,'scheduled',?,?,?,'public')`).run(dentistId, null, name, last10(phone), date, time, end, reason || 'Booking via website', email, address).lastInsertRowid;
   audit(null, null, 'public_booking', null, reqId, true, name + ' ' + date + ' ' + time, 'booking', id);
-  // v1.3: the desk sees it instantly (SSE bell) and the patient gets a confirmation reminder
-  push({ audience: 'staff', kind: 'booking', title: `New public booking — ${name}`,
-    body: `${date} at ${time}`, link: '#/admin' });
-  reminders.confirmPublicBooking(id);
   res.status(201).json({ ok: true, data: { id, date, time, name, phone: last10(phone) } });
 }));
 

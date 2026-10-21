@@ -1,16 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import DentEraMark from '../components/DentEraMark.jsx'
-import Notifications from '../components/Notifications.jsx'
-import ThemeToggle from '../components/ThemeToggle.jsx'
-import TrendChart from '../components/TrendChart.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
   Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
-  ClipboardList, Stethoscope, LogOut, Menu, Calendar, BarChart, Phone, Globe, Tooth,
+  ClipboardList, Stethoscope, LogOut, Menu,
 } from '../components/Icons.jsx'
 import '../dashboard.css'
-import '../dashboard-v13.css'
 
 const pad = n => String(n).padStart(2, '0')
 const fmt12 = t => { const [h, m] = (t || '').split(':').map(Number); if (Number.isNaN(h)) return t || ''
@@ -20,7 +16,6 @@ const addMin = (t, m) => { const [h, mm] = String(t || '09:00').split(':').map(N
 const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const today = () => isoOf(new Date())
 const tomorrow = () => { const d = new Date(); d.setDate(d.getDate() + 1); return isoOf(d) }
-const dayAfter = n => { const d = new Date(); d.setDate(d.getDate() + n); return isoOf(d) }
 const prettyDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return iso
   return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }) }
 const shortDay = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return iso
@@ -30,6 +25,7 @@ const dayNum = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); i
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
 const initial = n => (n || '?').replace(/^Dr\.?\s*/i, '').trim()[0]?.toUpperCase() || '?'
 const money = n => '₹' + Number(n || 0).toLocaleString('en-IN')
+// stock portrait for the signed-in doctor's profile photo
 const doctorPhoto = id => `/doctor-${((((id || 1) - 1) % 8) + 8) % 8 + 1}.jpg`
 
 const STATUS_ORDER = ['scheduled', 'completed', 'no_show', 'cancelled']
@@ -56,32 +52,17 @@ export default function Dashboard({ me, onChat, onLogout }) {
   const [activeSection, setActiveSection] = useState('overview')
   const [sideOpen, setSideOpen] = useState(false) // mobile: off-canvas sidebar drawer
 
-  // v1.3 state: week view, insights, recall, payments
-  const [weekAppts, setWeekAppts] = useState([])
-  const [weekFrom, setWeekFrom] = useState(today())
-  const [dragId, setDragId] = useState(null)
-  const [insights, setInsights] = useState(null)
-  const [trend, setTrend] = useState([])
-  const [topTreatments, setTopTreatments] = useState([])
-  const [util, setUtil] = useState([])
-  const [recall, setRecall] = useState([])
-  const [payFor, setPayFor] = useState(null)
-  const [payForm, setPayForm] = useState({ amount: '', method: 'upi', reference: '' })
-  const [upi, setUpi] = useState(null)
-
   // booking studio state
   const [bookOpen, setBookOpen] = useState(false)
   const [book, setBook] = useState({ patient_id: '', fname: '', lname: '', phone: '', email: '', address: '', date: today(), time: '10:00', minutes: 30, reason: 'Consultation' })
   const [bookErr, setBookErr] = useState('')
   const [bookBusy, setBookBusy] = useState(false)
-  const [slots, setSlots] = useState(null)
+  const [slots, setSlots] = useState(null)          // undefined = loading, null = fall back to manual time
   const [treatments, setTreatments] = useState([])
   const slotsSeq = useRef(0)
 
   const [addOpen, setAddOpen] = useState(false)
   const [addPatient, setAddPatient] = useState({ name: '', phone: '', dob: '', gender: '', medical_notes: '' })
-
-  const isDentist = me.role === 'dentist'
 
   async function load() {
     const safe = p => p.catch(() => ({ data: { data: [] } }))
@@ -100,48 +81,15 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
   // treatment catalogue powers the reason quick-picks (duration auto-syncs per treatment)
   useEffect(() => {
-    if (!isDentist) return
+    if (me.role !== 'dentist') return
     let live = true
     api.get('/api/treatments').then(({ data }) => { if (live) setTreatments(data.data || []) }).catch(() => {})
     return () => { live = false }
-  }, [isDentist])
-
-  // v1.3: week appointments (7 days from weekFrom)
-  useEffect(() => {
-    if (activeSection !== 'week') return
-    let live = true
-    api.get(`/api/appointments?from=${weekFrom}&to=${dayAfter(6)}`).then(({ data }) => {
-      if (live) setWeekAppts(data.data || [])
-    }).catch(() => {})
-    return () => { live = false }
-  }, [activeSection, weekFrom])
-
-  // v1.3: practice insights
-  useEffect(() => {
-    if (activeSection !== 'insights') return
-    let live = true
-    Promise.all([
-      api.get('/api/analytics/summary'), api.get('/api/analytics/trend'),
-      api.get('/api/analytics/top-treatments'), api.get('/api/analytics/utilization')])
-      .then(([s, t, tt, u]) => {
-        if (!live) return
-        setInsights(s.data.data || null); setTrend(t.data.data || [])
-        setTopTreatments(tt.data.data || []); setUtil(u.data.data || [])
-      }).catch(() => {})
-    return () => { live = false }
-  }, [activeSection])
-
-  // v1.3: recall list
-  useEffect(() => {
-    if (activeSection !== 'recall') return
-    let live = true
-    api.get('/api/recall').then(({ data }) => { if (live) setRecall(data.data || []) }).catch(() => {})
-    return () => { live = false }
-  }, [activeSection])
+  }, [me.role])
 
   // free slots for the booking form — fetched live while the form is open (race-guarded)
   useEffect(() => {
-    if (!bookOpen || !isDentist) return
+    if (!bookOpen || me.role !== 'dentist') return
     const seq = ++slotsSeq.current
     let live = true
     setSlots(undefined)
@@ -149,7 +97,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
       if (live && seq === slotsSeq.current) setSlots(status === 200 ? (data.data || []) : null)
     }).catch(() => { if (live && seq === slotsSeq.current) setSlots(null) })
     return () => { live = false }
-  }, [bookOpen, book.date, isDentist])
+  }, [bookOpen, book.date, me.role])
 
   async function logout() { await api.post('/api/auth/logout'); onLogout(); location.hash = '#/' }
 
@@ -163,13 +111,26 @@ export default function Dashboard({ me, onChat, onLogout }) {
     .sort((x, y) => String(x.start_time || '').localeCompare(String(y.start_time || '')))[0] || null
 
   const pageCopy = {
-    overview: { eyebrow: 'OVERVIEW', title: 'Dashboard', description: prettyDate(date) },
-    appointments: { eyebrow: 'SCHEDULE', title: 'Appointments', description: 'Appointments booked for the selected day.' },
-    patients: { eyebrow: 'CLINIC', title: 'Patient register', description: 'Registered patients and their contact details.' },
-    billing: { eyebrow: 'BILLING', title: 'Unpaid invoices', description: 'Outstanding payments to follow up.' },
-    week: { eyebrow: 'PLANNING', title: 'Week view', description: 'Drag a visit to another day to move it — overlaps are refused automatically.' },
-    insights: { eyebrow: 'PRACTICE', title: 'Practice insights', description: 'Revenue, treatments and chair utilisation for your practice.' },
-    recall: { eyebrow: 'FOLLOW-UP', title: 'Recall list', description: 'Patients due for a check-up — last completed visit older than 6 months, or never seen.' }
+    overview: {
+      eyebrow: 'OVERVIEW',
+      title: 'Dashboard',
+      description: prettyDate(date)
+    },
+    appointments: {
+      eyebrow: 'SCHEDULE',
+      title: 'Appointments',
+      description: 'Appointments booked for the selected day.'
+    },
+    patients: {
+      eyebrow: 'CLINIC',
+      title: 'Patient register',
+      description: 'Registered patients and their contact details.'
+    },
+    billing: {
+      eyebrow: 'BILLING',
+      title: 'Unpaid invoices',
+      description: 'Outstanding payments to follow up.'
+    }
   }[activeSection]
 
   function toggleBook() {
@@ -232,19 +193,6 @@ export default function Dashboard({ me, onChat, onLogout }) {
     load()
   }
 
-  // v1.3: drag a visit to another day (time stays; the server re-checks overlaps)
-  async function moveToDay(id, toDate) {
-    setMsg('')
-    const ap = weekAppts.find(a => a.id === id)
-    if (!ap || ap.appointment_date === toDate) return
-    const { status, data } = await api.patch(`/api/appointments/${id}`, { appointment_date: toDate })
-    setMsg(status === 200 ? `Moved ${ap.patient_name || 'the visit'} to ${prettyDate(toDate)}.` : (data.message || 'Could not move that visit.'))
-    if (status === 200) {
-      const updated = await api.get(`/api/appointments?from=${weekFrom}&to=${dayAfter(6)}`)
-      setWeekAppts(updated.data.data || [])
-    }
-  }
-
   async function addNewPatient(e) {
     e.preventDefault(); setMsg('')
     const b = addPatient
@@ -260,36 +208,13 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
   async function pay(invId, full) {
     const inv = invoices.find(i => i.id === invId)
-    const total = inv.amount - inv.discount
-    const left = total - (inv.paid_amount || 0)
-    // markInvoicePaid takes an ABSOLUTE paid_amount — fully paid = the whole total
-    const amount = full ? total : (inv.paid_amount || 0) + Math.round(left / 2)
+    const amount = full ? (inv.amount - inv.discount) : Math.round((inv.amount - inv.discount) / 2)
     const { data } = await api.patch(`/api/invoices/${invId}`, { paid_amount: amount })
     setMsg(data.data ? `Invoice #${invId} → ${data.data.status}.` : (data.message || 'Failed.'))
     load()
   }
 
-  // v1.3: record a real payment (method + reference on the payment row)
-  async function recordPayment(e) {
-    e.preventDefault(); setMsg('')
-    const { status, data } = await api.post(`/api/invoices/${payFor}/payments`, {
-      amount: Math.round(+payForm.amount), method: payForm.method, reference: payForm.reference || undefined })
-    if (status === 201) {
-      setMsg(`Recorded ${money(data.data.amount)} (${data.data.method}) — invoice #${data.data.invoice_id} is now ${data.data.status}.`)
-      setPayFor(null); setPayForm({ amount: '', method: 'upi', reference: '' }); load()
-    } else setMsg(data.message || 'Could not record the payment.')
-  }
-
-  // v1.3: UPI deep link for an outstanding invoice
-  async function showUpi(invId) {
-    setMsg('')
-    const { status, data } = await api.get(`/api/invoices/${invId}/upi`)
-    if (status === 200) { setUpi(data.data); setMsg(`UPI link ready for ${money(data.data.amount)} — copy it or open a UPI app.`) }
-    else setMsg(data.message || 'Could not build the UPI link.')
-  }
-
   const walkInMode = !book.patient_id
-  const weekDays = Array.from({ length: 7 }, (_, i) => dayAfter(i))
 
   return (
     <div className="view dashboard-page">
@@ -308,15 +233,10 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </div>
 
         <nav className="dashboard-nav" aria-label="Dashboard sections">
-          {[['overview', 'Overview', Home], ['appointments', 'Appointments', LayoutGrid], ['week', 'Week view', Calendar],
-            ['patients', 'Patients', UserRound], ['billing', 'Billing', IndianRupee], ['insights', 'Insights', BarChart],
-            ['recall', 'Recall', Phone]].map(([id, label, Icon]) => (
-            <button key={id} type="button" className={activeSection === id ? 'is-active' : ''}
-              aria-current={activeSection === id ? 'page' : undefined}
-              onClick={() => { setActiveSection(id); setSideOpen(false) }}>
-              <span aria-hidden="true"><Icon size={17} /></span>{label}
-            </button>
-          ))}
+          <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => { setActiveSection('overview'); setSideOpen(false) }}><span aria-hidden="true"><Home size={17} /></span>Overview</button>
+          <button type="button" className={activeSection === 'appointments' ? 'is-active' : ''} aria-current={activeSection === 'appointments' ? 'page' : undefined} onClick={() => { setActiveSection('appointments'); setSideOpen(false) }}><span aria-hidden="true"><LayoutGrid size={17} /></span>Appointments</button>
+          <button type="button" className={activeSection === 'patients' ? 'is-active' : ''} aria-current={activeSection === 'patients' ? 'page' : undefined} onClick={() => { setActiveSection('patients'); setSideOpen(false) }}><span aria-hidden="true"><UserRound size={17} /></span>Patients</button>
+          <button type="button" className={activeSection === 'billing' ? 'is-active' : ''} aria-current={activeSection === 'billing' ? 'page' : undefined} onClick={() => { setActiveSection('billing'); setSideOpen(false) }}><span aria-hidden="true"><IndianRupee size={17} /></span>Billing</button>
         </nav>
 
         <button type="button" className="ref-signout" onClick={logout}><LogOut size={16} /> Sign out</button>
@@ -328,11 +248,8 @@ export default function Dashboard({ me, onChat, onLogout }) {
         <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)}><Menu size={20} /></button>
         <h1 className="ref-topbar-title">Dashboard</h1>
         <span className="spacer" />
-        <ThemeToggle />
-        <Notifications />
-        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
-        <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
-        <a className="mini" href="#/portal" title="Patient portal" aria-label="Patient portal"><Tooth size={14} /><span className="hide-sm">Patient portal</span></a>
+        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin"><Shield size={14} /> Admin panel</a>}
+        <a className="mini" href="#/book">Public booking</a>
         {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
       </div>
 
@@ -342,25 +259,13 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <h2 className="ref-pagehead-title">{pageCopy.title}</h2>
           <p className="muted">{pageCopy.description}</p>
         </div>
-        {isDentist && <div className="dashboard-actions">
+        {me.role === 'dentist' && <div className="dashboard-actions">
           {(activeSection === 'overview' || activeSection === 'patients') && <button className="btn btn--ghost" onClick={toggleAdd}><Plus size={15} /> Add patient</button>}
           {(activeSection === 'overview' || activeSection === 'appointments') && <button className="btn dash-cta-btn" onClick={toggleBook}><CalendarCheck size={15} /> New appointment</button>}
         </div>}
       </div>
 
       {msg && <p className="authmsg ok" role="status" aria-live="polite">{msg}</p>}
-      {upi && (
-        <div className="panel upicard">
-          <div><span className="panel-eyebrow">UPI PAYMENT</span><h3>{money(upi.amount)} — invoice #{upi.invoice_id}</h3></div>
-          <code className="upilink">{upi.upi}</code>
-          <span className="rowgap">
-            <button className="mini" onClick={() => navigator.clipboard?.writeText(upi.upi)}>Copy link</button>
-            <a className="mini" href={upi.upi}>Open UPI app</a>
-            <button className="mini" onClick={() => setUpi(null)}>Close</button>
-          </span>
-          <p className="muted tiny">Any UPI app can pay this link — record the payment here once the money arrives.</p>
-        </div>
-      )}
 
       {activeSection === 'overview' && <>
         <div className="stats ref-stats">
@@ -386,14 +291,6 @@ export default function Dashboard({ me, onChat, onLogout }) {
               <span className="statlabel">TOTAL PATIENTS</span>
               <span className="statnum">{patientTotal}+</span>
               <span className="stat-foot">in your register</span>
-            </div>
-          </div>
-          <div className="stat stat--amber">
-            <span className="stat-icon stat-icon--amber" aria-hidden="true"><IndianRupee size={20} /></span>
-            <div className="stat-body">
-              <span className="statlabel">OUTSTANDING</span>
-              <span className="statnum">{money(due)}</span>
-              <span className="stat-foot">{invoices.length} invoice{invoices.length === 1 ? '' : 's'} to collect</span>
             </div>
           </div>
         </div>
@@ -459,7 +356,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </div>
       </>}
 
-      {bookOpen && (activeSection === 'overview' || activeSection === 'appointments') && isDentist && (
+      {bookOpen && (activeSection === 'overview' || activeSection === 'appointments') && me.role === 'dentist' && (
         <form className="dash-book" onSubmit={bookAppt} aria-label="Book an appointment">
           <div className="dash-book__banner">
             <span className="dash-book__banner-icon" aria-hidden="true"><CalendarCheck size={26} /></span>
@@ -494,7 +391,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
                   </select>
                 </label>
                 <div className="dash-fields">
-                  <label className="dash-field dbk-doc">Doctor name<input value={me.name} readOnly disabled /></label>
+                  <label className="dash-field dbk-doc">Doctor name<input value={me.name} readOnly disabled title="Appointments are booked under your signed-in account" /></label>
                 </div>
               </>
             )}
@@ -559,7 +456,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </form>
       )}
 
-      {addOpen && (activeSection === 'overview' || activeSection === 'patients') && isDentist && (
+      {addOpen && (activeSection === 'overview' || activeSection === 'patients') && me.role === 'dentist' && (
         <form className="panel rowForm dash-form" onSubmit={addNewPatient} aria-label="Add patient">
           <div className="dash-form-head">
             <span className="dash-form-icon" aria-hidden="true"><UserRound size={20} /></span>
@@ -586,211 +483,64 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </form>
       )}
 
-      {activeSection !== 'billing' && activeSection !== 'week' && activeSection !== 'insights' && activeSection !== 'recall' && (
-        <div className={`grid2 dashboard-panels${activeSection === 'overview' ? '' : ' dashboard-panels--single'}`}>
-          {(activeSection === 'overview' || activeSection === 'appointments') && <section className="panel" id="appointments">
-            <div className="panelhead">
-              <div><span className="panel-eyebrow">YOUR SCHEDULE</span><h3>Appointments</h3></div>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Appointment date" />
-            </div>
-            {appts.length === 0 && <p className="empty"><CalendarCheck size={22} /> No appointments today.</p>}
-            <ul className="list apptlist">
-              {appts.map(a => (
-                <li key={a.id} className="appt">
-                  <span className="timechip">{fmt12(a.start_time)}<small>{fmt12(a.end_time)}</small></span>
-                  <PatAvatar name={a.patient_name} />
-                  <span className="apptbody">
-                    <b>{a.patient_name || 'Walk-in'}</b>
-                    {a.source === 'public' && <span className="badge">public</span>}
-                    <span className="muted"> — {a.reason || 'Consultation'}</span>
-                    {(a.email || a.address) && (
-                      <span className="muted appt-contact">
-                        {a.email && <span title="Email">{a.email}</span>}
-                        {a.email && a.address && <span className="appt-sep">·</span>}
-                        {a.address && <span title="Address">{a.address}</span>}
-                      </span>
-                    )}
-                    <span className="rowgap">
-                      {a.status === 'scheduled' && <button type="button" className="mini mini--ok" onClick={() => setStatus(a.id, 'completed')}><Check size={13} /> complete</button>}
-                      {a.status === 'scheduled' && <button type="button" className="mini mini--warn" onClick={() => setStatus(a.id, 'no_show')}><Clock size={13} /> no-show</button>}
-                      {a.status === 'scheduled' && <button type="button" className="mini mini--danger" onClick={() => cancelAppt(a.id)}><XMark size={13} /> cancel</button>}
-                      {a.status !== 'scheduled' && <button type="button" className="mini" onClick={() => setStatus(a.id, 'scheduled')}><RotateCcw size={13} /> reopen</button>}
-                    </span>
-                  </span>
-                  <span className={'stchip st-' + a.status}>{a.status.replace('_', ' ')}</span>
-                </li>
-              ))}
-            </ul>
-          </section>}
-
-          {(activeSection === 'overview' || activeSection === 'patients') && <section className="panel" id="patients">
-            <div className="panelhead"><div><span className="panel-eyebrow">YOUR CLINIC</span><h3>Patient register</h3></div><span className="panel-count">{patientTotal}</span></div>
-            <label className="patient-search">
-              <span aria-hidden="true"><Search size={16} /></span>
-              <input placeholder="Search name or phone…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search patients" />
-            </label>
-            {patients.length === 0 && <p className="empty"><Stethoscope size={22} /> No patients match "{q}".</p>}
-            <ul className="list">
-              {patients.map(p => (
-                <li key={p.id} className="ptrow">
-                  <span className="avatar" aria-hidden="true">{initial(p.name)}</span>
-                  <span className="apptbody">
-                    <a href={`#/patients/${p.id}`}><b>{p.name}</b></a>
-                    {p.medical_notes && <span className="warn" title={p.medical_notes}><AlertTriangle size={13} /></span>}
-                    <span className="muted"> {p.phone || ''}</span>
-                  </span>
-                  <a className="chev" href={`#/patients/${p.id}`} aria-label={`Open ${p.name}`}><ChevronRight size={16} /></a>
-                </li>
-              ))}
-            </ul>
-          </section>}
-        </div>
-      )}
-
-      {/* ---------- v1.3: week view (drag to move a visit) ---------- */}
-      {activeSection === 'week' && (
-        <section className="panel">
+      {activeSection !== 'billing' && <div className={`grid2 dashboard-panels${activeSection === 'overview' ? '' : ' dashboard-panels--single'}`}>
+        {(activeSection === 'overview' || activeSection === 'appointments') && <section className="panel" id="appointments">
           <div className="panelhead">
-            <div><span className="panel-eyebrow">7 DAYS</span><h3>Week of {prettyDate(weekFrom)}</h3></div>
-            <span className="rowgap">
-              <button className="mini" onClick={() => setWeekFrom(dayAtOffset(weekFrom, -7))}>← Previous</button>
-              <button className="mini" onClick={() => setWeekFrom(today())}>This week</button>
-              <button className="mini" onClick={() => setWeekFrom(dayAtOffset(weekFrom, 7))}>Next →</button>
-            </span>
+            <div><span className="panel-eyebrow">YOUR SCHEDULE</span><h3>Appointments</h3></div>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Appointment date" />
           </div>
-          <div className="weekgrid">
-            {weekDays.map(d => {
-              const dayList = weekAppts.filter(a => a.appointment_date === d)
-              const isToday = d === today()
-              return (
-                <div key={d} className={'weekcol' + (isToday ? ' is-today' : '')}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={() => dragId && moveToDay(dragId, d)}>
-                  <div className="weekcol__head">
-                    <b>{shortDay(d)}</b><small>{dayNum(d)}</small>
-                    <span className="weekcol__count">{dayList.length || ''}</span>
-                  </div>
-                  {dayList.length === 0 && <p className="weekcol__empty">free</p>}
-                  {dayList.map(a => (
-                    <div key={a.id} className={'weekcard st-' + a.status}
-                      draggable onDragStart={() => setDragId(a.id)} onDragEnd={() => setDragId(null)}
-                      title={dragId ? `Drop on ${prettyDate(d)}` : 'Drag to another day to move this visit'}>
-                      <b>{fmt12(a.start_time)}</b>
-                      <span className="muted"> {a.patient_name || 'Walk-in'}</span>
-                      {a.source === 'public' && <span className="badge">public</span>}
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-          <p className="muted tiny">Drag a card to another day to reschedule — the clinic's overlap rules still apply, and a clash is refused with a message.</p>
-        </section>
-      )}
-
-      {/* ---------- v1.3: practice insights ---------- */}
-      {activeSection === 'insights' && (
-        <>
-          <div className="stats ref-stats ref-stats--4">
-            <div className="stat stat--mint">
-              <span className="stat-icon stat-icon--green" aria-hidden="true"><IndianRupee size={20} /></span>
-              <div className="stat-body">
-                <span className="statlabel">COLLECTED (30 DAYS)</span>
-                <span className="statnum">{money(insights?.revenue_collected)}</span>
-                <span className="stat-foot">payments recorded</span>
-              </div>
-            </div>
-            <div className="stat stat--sky">
-              <span className="stat-icon stat-icon--sky" aria-hidden="true"><CalendarCheck size={20} /></span>
-              <div className="stat-body">
-                <span className="statlabel">APPOINTMENTS</span>
-                <span className="statnum">{insights?.appointments ?? '—'}</span>
-                <span className="stat-foot">{insights?.completed ?? 0} completed</span>
-              </div>
-            </div>
-            <div className="stat stat--amber">
-              <span className="stat-icon stat-icon--amber" aria-hidden="true"><AlertTriangle size={20} /></span>
-              <div className="stat-body">
-                <span className="statlabel">NO-SHOW RATE</span>
-                <span className="statnum">{insights?.no_show?.rate ?? 0}%</span>
-                <span className="stat-foot">{insights?.no_show?.no_shows ?? 0} of {insights?.no_show?.total ?? 0}</span>
-              </div>
-            </div>
-            <div className="stat stat--teal">
-              <span className="stat-icon stat-icon--teal" aria-hidden="true"><Users size={20} /></span>
-              <div className="stat-body">
-                <span className="statlabel">NEW PATIENTS</span>
-                <span className="statnum">{insights?.new_patients ?? 0}</span>
-                <span className="stat-foot">added in this window</span>
-              </div>
-            </div>
-          </div>
-
-          <section className="panel">
-            <div className="panelhead"><div><span className="panel-eyebrow">REVENUE & VISITS</span><h3>Daily trend</h3></div>
-              <span className="muted">bars = money collected · dots = appointments</span></div>
-            <TrendChart data={trend} />
-          </section>
-
-          <div className="grid2">
-            <section className="panel">
-              <h3>Top treatments</h3>
-              {topTreatments.length === 0 && <p className="empty">No treatment records in this window yet.</p>}
-              <ul className="list">
-                {topTreatments.map(t => (
-                  <li key={t.name}>
-                    <span className="apptbody">
-                      <b>{t.name}</b>
-                      <span className="ref-status-track" style={{ width: 120 }}>
-                        <i style={{ width: `${Math.round((t.c / Math.max(1, topTreatments[0].c)) * 100)}%`, background: 'var(--mint)' }} />
-                      </span>
+          {appts.length === 0 && <p className="empty"><CalendarCheck size={22} /> No appointments today.</p>}
+          <ul className="list apptlist">
+            {appts.map(a => (
+              <li key={a.id} className="appt">
+                <span className="timechip">{fmt12(a.start_time)}<small>{fmt12(a.end_time)}</small></span>
+                <PatAvatar name={a.patient_name} />
+                <span className="apptbody">
+                  <b>{a.patient_name || 'Walk-in'}</b>
+                  {a.source === 'public' && <span className="badge">public</span>}
+                  <span className="muted"> — {a.reason || 'Consultation'}</span>
+                  {(a.email || a.address) && (
+                    <span className="muted appt-contact">
+                      {a.email && <span title="Email">{a.email}</span>}
+                      {a.email && a.address && <span className="appt-sep">·</span>}
+                      {a.address && <span title="Address">{a.address}</span>}
                     </span>
-                    <span className="muted">{t.c}× · {money(t.v)}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="panel">
-              <h3>Chair utilisation</h3>
-              {util.length === 0 && <p className="empty">Nothing booked in this window yet.</p>}
-              <ul className="list">
-                {util.map(u => (
-                  <li key={u.dentist}>
-                    <span className="apptbody"><b>{u.dentist}</b></span>
-                    <span className="muted">{u.completed}/{u.booked} completed · no-show {u.no_show_rate}%</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
-        </>
-      )}
+                  )}
+                  <span className="rowgap">
+                    {a.status === 'scheduled' && <button type="button" className="mini mini--ok" onClick={() => setStatus(a.id, 'completed')}><Check size={13} /> complete</button>}
+                    {a.status === 'scheduled' && <button type="button" className="mini mini--warn" onClick={() => setStatus(a.id, 'no_show')}><Clock size={13} /> no-show</button>}
+                    {a.status === 'scheduled' && <button type="button" className="mini mini--danger" onClick={() => cancelAppt(a.id)}><XMark size={13} /> cancel</button>}
+                    {a.status !== 'scheduled' && <button type="button" className="mini" onClick={() => setStatus(a.id, 'scheduled')}><RotateCcw size={13} /> reopen</button>}
+                  </span>
+                </span>
+                <span className={'stchip st-' + a.status}>{a.status.replace('_', ' ')}</span>
+              </li>
+            ))}
+          </ul>
+        </section>}
 
-      {/* ---------- v1.3: recall list ---------- */}
-      {activeSection === 'recall' && (
-        <section className="panel">
-          <div className="panelhead">
-            <div><span className="panel-eyebrow">FOLLOW-UP</span><h3>Due for a check-up</h3></div>
-            <span className="panel-count">{recall.length}</span>
-          </div>
-          {recall.length === 0 && <p className="empty"><Phone size={22} /> Everyone has visited in the last 6 months — no recalls due.</p>}
+        {(activeSection === 'overview' || activeSection === 'patients') && <section className="panel" id="patients">
+          <div className="panelhead"><div><span className="panel-eyebrow">YOUR CLINIC</span><h3>Patient register</h3></div><span className="panel-count">{patientTotal}</span></div>
+          <label className="patient-search">
+            <span aria-hidden="true"><Search size={16} /></span>
+            <input placeholder="Search name or phone…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search patients" />
+          </label>
+          {patients.length === 0 && <p className="empty"><Stethoscope size={22} /> No patients match "{q}".</p>}
           <ul className="list">
-            {recall.map(p => (
+            {patients.map(p => (
               <li key={p.id} className="ptrow">
                 <span className="avatar" aria-hidden="true">{initial(p.name)}</span>
                 <span className="apptbody">
                   <a href={`#/patients/${p.id}`}><b>{p.name}</b></a>
+                  {p.medical_notes && <span className="warn" title={p.medical_notes}><AlertTriangle size={13} /></span>}
                   <span className="muted"> {p.phone || ''}</span>
-                  <span className="muted"> · {p.visits} visit{p.visits === 1 ? '' : 's'}</span>
                 </span>
-                <span className={'stchip ' + (p.due === 'never-seen' ? 'st-cancelled' : 'st-scheduled')}>
-                  {p.due === 'never-seen' ? 'never seen' : `last visit ${p.due}`}
-                </span>
+                <a className="chev" href={`#/patients/${p.id}`} aria-label={`Open ${p.name}`}><ChevronRight size={16} /></a>
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        </section>}
+      </div>}
 
       {activeSection === 'billing' && <section className="panel dashboard-billing" id="billing">
         <div className="panelhead">
@@ -799,58 +549,20 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </div>
         {invoices.length === 0 && <p className="empty"><IndianRupee size={22} /> All invoices are settled.</p>}
         <ul className="list">
-          {invoices.map(i => {
-            const left = i.amount - i.discount - i.paid_amount
-            return (
-              <li key={i.id} className="invrow">
-                <span>
-                  <b>#{i.id}</b> {money(i.amount)}{i.discount ? ` − ${money(i.discount)}` : ''} · paid {money(i.paid_amount)}
-                  {left > 0 && <span className="muted"> · {money(left)} left</span>}
-                </span>
-                <span className="rowgap">
-                  <a className="mini" href={`#/patients/${i.patient_id}`}>patient</a>
-                  <a className="mini" href={`#/plans/${i.plan_id || ''}`} style={i.plan_id ? null : { visibility: 'hidden' }}>plan</a>
-                  <button className="mini" onClick={() => showUpi(i.id)}>UPI link</button>
-                  <button className="mini" onClick={() => { setPayFor(payFor === i.id ? null : i.id); setPayForm({ amount: String(left), method: 'upi', reference: '' }); setMsg('') }}>
-                    record payment
-                  </button>
-                  <button className="mini mini--ok" onClick={() => pay(i.id, true)}><Check size={13} /> mark fully paid</button>
-                  {i.status === 'unpaid' && <button className="mini mini--warn" onClick={() => pay(i.id, false)}>half payment</button>}
-                </span>
-                {payFor === i.id && (
-                  <form className="panel payform" onSubmit={recordPayment} aria-label={`Record payment for invoice ${i.id}`}>
-                    <div className="grid3">
-                      <label>Amount <input type="number" min="1" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} required /></label>
-                      <label>Method
-                        <select value={payForm.method} onChange={e => setPayForm({ ...payForm, method: e.target.value })}>
-                          <option value="upi">UPI</option><option value="cash">Cash</option>
-                          <option value="card">Card</option><option value="bank">Bank transfer</option><option value="other">Other</option>
-                        </select>
-                      </label>
-                      <label>Reference <small>(optional)</small>
-                        <input value={payForm.reference} onChange={e => setPayForm({ ...payForm, reference: e.target.value })} placeholder="UPI ref / last 4 digits" />
-                      </label>
-                    </div>
-                    <span className="rowgap">
-                      <button type="submit" className="btn"><Check size={15} /> Save payment</button>
-                      <button type="button" className="mini" onClick={() => setPayFor(null)}>Cancel</button>
-                    </span>
-                  </form>
-                )}
-              </li>
-            )
-          })}
+          {invoices.map(i => (
+            <li key={i.id} className="invrow">
+              <span><b>#{i.id}</b> {money(i.amount)}{i.discount ? ` − ${money(i.discount)}` : ''} · paid {money(i.paid_amount)}</span>
+              <span className="rowgap">
+                <a className="mini" href={`#/patients/${i.patient_id}`}>patient</a>
+                <a className="mini" href={`#/plans/${i.plan_id || ''}`} style={i.plan_id ? null : { visibility: 'hidden' }}>plan</a>
+                <button className="mini mini--ok" onClick={() => pay(i.id, true)}><Check size={13} /> mark fully paid</button>
+                <button className="mini mini--warn" onClick={() => pay(i.id, false)}>half payment</button>
+              </span>
+            </li>
+          ))}
         </ul>
       </section>}
       </main>
     </div>
   )
-}
-
-// helper: a week starting from a given ISO day shifted by n days
-function dayAtOffset(iso, n) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
-  if (!m) return iso
-  const d = new Date(+m[1], +m[2] - 1, +m[3]); d.setDate(d.getDate() + n)
-  return isoOf(d)
 }

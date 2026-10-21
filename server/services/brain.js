@@ -5,7 +5,6 @@
 const { db, localDay, friendlyDate, fmt12 } = require('../db/connection');
 const { answerFor } = require('./knowledge');
 const { runTool } = require('./tools');
-const { recall: recallList } = require('./analytics');
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const RE = {
@@ -25,11 +24,7 @@ const RE = {
   invoices: /\b(invoices?|bills?|payments?|unpaid|paid)\b/i,
   treatments: /\b(treatments?|procedures?|price|charges|cost of)\b/i,
   greeting: /^(hi|hello|hey|namaste|good (morning|afternoon|evening))\b/i,
-  help: /\bhelp\b|\bwhat can you do\b/i,
-  // v1.3 intents
-  briefing: /\b(briefing|summary|my day|morning|overview|at a glance|what.s happening)\b/i,
-  moveNext: /\b(next|earliest|first|upcoming)\b.*\b(free|open|available)\b.*\b(slot|time)\b/i,
-  recall: /\b(recall|due|follow.?up|call back|checkup|check.?up)\b.*\b(patient|list|due|reminder)\b/i
+  help: /\bhelp\b|\bwhat can you do\b/i
 };
 
 // "4pm", "4 pm", "16:00", "at 4" → {start_time:"16:00"}
@@ -59,11 +54,6 @@ function routeIntent(message, u) {
   const T = (name, args) => ({ tool: name, args });
 
   // ---------- WRITE intents first ----------
-  if (RE.moveNext.test(text)) { // "move appointment 3 to the next free slot"
-    const id = /\b(?:appointment|appt)?\s*#?(\d+)\b/.exec(text.replace(RE.moveNext, ''));
-    const mins = /\b(15|30|45|60)\s*(?:min|minutes)\b/i.exec(text);
-    return T('moveToNextSlot', { appointment_id: id ? +id[1] : null, minutes: mins ? +mins[1] : undefined });
-  }
   if (RE.reschedule.test(text)) {
     const id = /\b(?:appointment|appt)?\s*#?(\d+)\b/.exec(text.replace(RE.reschedule, ''));
     const t = pickTime(text);
@@ -95,22 +85,6 @@ function routeIntent(message, u) {
   }
 
   // ---------- READ intents ----------
-  if (RE.briefing.test(text)) {
-    const b = runTool(u, 'getBriefing', {});
-    const parts = [
-      b.todays ? `${b.todays} appointment${b.todays === 1 ? '' : 's'} left today` : 'nothing left today',
-      `${b.week} in the next 7 days`
-    ];
-    let text2 = `Here is your day: ${parts.join(', ')}.`;
-    if (b.unpaid) text2 += ` ${b.unpaid} invoice${b.unpaid === 1 ? '' : 's'} need payment — ${b.dues} rupees outstanding.`;
-    if (b.recalls) text2 += ` ${b.recalls} patient${b.recalls === 1 ? '' : 's'} are due for a check-up.`;
-    return { text: text2 };
-  }
-  if (RE.recall.test(text)) {
-    const rows = recallList(u, { months: 6, limit: 6 });
-    if (!rows.length) return { text: 'No patients are due for a recall — everyone has visited in the last 6 months.' };
-    return { text: `Due for a check-up: ` + rows.map(r => r.due === 'never-seen' ? `${r.name} (never seen)` : `${r.name} (last visit ${friendlyDate(r.due)})`).join(', ') + '.' };
-  }
   if (RE.nextAppt.test(text)) {
     const rows = runTool(u, 'getMyAppointments', { upcoming: true });
     const next = rows.find(r => r.status === 'scheduled');

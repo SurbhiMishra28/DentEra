@@ -1945,7 +1945,6 @@
 .dashboard-page .stat--sky { background: #e0f2fe; }
 .dashboard-page .stat--mint { background: #dcfce7; }
 .dashboard-page .stat--teal { background: #ccfbf1; }
-.dashboard-page .stat--amber { background: #fef3c7; }
 
 .dashboard-page .ref-stats .stat-icon {
   width: 48px;
@@ -1959,7 +1958,6 @@
 .dashboard-page .stat-icon--sky { color: #0284c7; }
 .dashboard-page .stat-icon--green { color: #16a34a; }
 .dashboard-page .stat-icon--teal { color: #0d9488; }
-.dashboard-page .stat-icon--amber { color: #b45309; }
 
 .dashboard-page .ref-stats .stat-body {
   display: grid;

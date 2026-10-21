@@ -21,17 +21,14 @@ function slotClash(dentistId, date, start, end, ignoreId) {
 
 const tools = {
 
-  getMyAppointments(u, { date, from, to, upcoming } = {}) {
+  getMyAppointments(u, { date, upcoming } = {}) {
     const d = u.dentistId;
     let sql = `SELECT id,appointment_date,start_time,end_time,status,reason,email,address,patient_id,patient_name,source
       FROM appointments WHERE dentist_id=?`;
     const p = [d];
     if (/^\d{4}-\d{2}-\d{2}$/.test(date || '')) { sql += ' AND appointment_date=?'; p.push(date); }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(from || '') || /^\d{4}-\d{2}-\d{2}$/.test(to || '')) {
-      sql += ' AND appointment_date BETWEEN ? AND ?'; p.push(from || '0000-01-01', to || '9999-12-31');
-    }
     if (upcoming) { sql += " AND status!='cancelled' AND (appointment_date>? OR (appointment_date=? AND start_time>=?))"; p.push(localDay(0), localDay(0), localTime()); }
-    sql += ' ORDER BY appointment_date,start_time LIMIT 200';
+    sql += ' ORDER BY appointment_date,start_time LIMIT 100';
     return db.prepare(sql).all(...p);
   },
 
@@ -199,50 +196,6 @@ const tools = {
     return { cancelled: true, appointment_id: +appointment_id };
   },
 
-  // morning briefing (v1.3): one speakable sentence-set covering today + money + recalls
-  getBriefing(u) {
-    const today = localDay(0), soon = localDay(7);
-    const one = (sql, ...a) => db.prepare(sql).get(...a).c;
-    const scoped = u.role === 'dentist' ? 'AND dentist_id=' + u.dentistId : '';
-    const todays = one(`SELECT COUNT(*) c FROM appointments WHERE appointment_date=? AND status='scheduled' ${scoped}`, today);
-    const week = one(`SELECT COUNT(*) c FROM appointments WHERE appointment_date BETWEEN ? AND ? AND status='scheduled' ${scoped}`, today, soon);
-    const unpaid = one(`SELECT COUNT(*) c FROM invoices i WHERE i.status!='paid' ${u.role === 'dentist'
-      ? 'AND i.patient_id IN (SELECT patient_id FROM dentist_patients WHERE dentist_id=' + u.dentistId + ')' : ''}`);
-    const dues = db.prepare(`SELECT COALESCE(SUM(i.amount-i.discount-i.paid_amount),0) c FROM invoices i WHERE i.status!='paid' ${u.role === 'dentist'
-      ? 'AND i.patient_id IN (SELECT patient_id FROM dentist_patients WHERE dentist_id=' + u.dentistId + ')' : ''}`).get().c;
-    const recalls = one(`SELECT COUNT(*) c FROM patients p JOIN dentist_patients dp ON dp.patient_id=p.id
-      WHERE dp.dentist_id=? AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.patient_id=p.id
-        AND a.status='completed' AND a.appointment_date>=?)`, u.dentistId, localDay(-180));
-    return { todays, week, unpaid, dues, recalls };
-  },
-
-  // smart reschedule (v1.3): the earliest free slot of the right length in the next
-  // `days` days — "move Sara to the next free half hour" becomes one action
-  suggestNextSlot(u, { days = 7, minutes = 30, appointment_id = null } = {}) {
-    const d = u.dentistId;
-    const dur = [15, 30, 45, 60].includes(+minutes) ? +minutes : 30;
-    const len = Math.min(Math.max(+days || 7, 1), 14);
-    let ap = null;
-    if (appointment_id) ap = db.prepare('SELECT * FROM appointments WHERE id=? AND dentist_id=?').get(+appointment_id, d);
-    const need = ap ? (ap.end_time > ap.start_time ? spanMin(ap.start_time, ap.end_time) : dur) : dur;
-    for (let i = 0; i < len; i++) {
-      const date = localDay(i);
-      const dow = new Date(date + 'T00:00:00').getDay();
-      const win = db.prepare('SELECT start_time,end_time FROM dentist_schedules WHERE dentist_id=? AND day_of_week=?').all(d, dow);
-      const busy = db.prepare(`SELECT start_time,end_time FROM appointments
-        WHERE dentist_id=? AND appointment_date=? AND status!='cancelled'`).all(d, date);
-      for (const w of win) {
-        for (let t = w.start_time; t < w.end_time;) {
-          const end = addMin(t, need);
-          const fits = end <= w.end_time && !busy.some(b => t < b.end_time && b.start_time < end);
-          if (fits && !(i === 0 && end <= localTime())) return { date, time: t, end_time: end, minutes: need };
-          t = end > t ? end : addMin(t, 15);
-        }
-      }
-    }
-    return null;
-  },
-
   rescheduleAppointment(u, { appointment_id, date, start_time, end_time } = {}) {
     const d = u.dentistId;
     const ap = db.prepare('SELECT * FROM appointments WHERE id=? AND dentist_id=?').get(+appointment_id, d);
@@ -254,28 +207,13 @@ const tools = {
     db.prepare("UPDATE appointments SET appointment_date=?, start_time=?, end_time=?, updated_at=datetime('now') WHERE id=?")
       .run(date2, st, en, ap.id);
     return { updated: true, appointment_id: ap.id, date: date2, start_time: st };
-  },
-
-  // find the next free slot AND move the appointment there in one call
-  moveToNextSlot(u, { appointment_id, minutes, days } = {}) {
-    const d = u.dentistId;
-    const ap = db.prepare('SELECT * FROM appointments WHERE id=? AND dentist_id=?').get(+appointment_id, d);
-    if (!ap) throw httpErr(404, 'NOT_FOUND', 'You are not authorized to access this resource.');
-    const suggestion = tools.suggestNextSlot({ dentistId: d }, { days, minutes, appointment_id: ap.id });
-    if (!suggestion) throw httpErr(409, 'NO_SLOT', 'No free slot of that length in the next few days — try a different week.');
-    db.prepare("UPDATE appointments SET appointment_date=?, start_time=?, end_time=?, updated_at=datetime('now') WHERE id=?")
-      .run(suggestion.date, suggestion.time, suggestion.end_time, ap.id);
-    return { updated: true, appointment_id: ap.id, date: suggestion.date, start_time: suggestion.time, minutes: suggestion.minutes };
   }
 };
-
-const spanMin = (a, b) => { const [ah, am] = a.split(':').map(Number), [bh, bm] = b.split(':').map(Number);
-  return Math.max(15, (bh * 60 + bm) - (ah * 60 + am)); };
 
 const addMin = (t, mins) => { const [h, m] = t.split(':').map(Number); const x = h * 60 + m + mins;
   return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
 
-const WRITE = new Set(['createAppointment', 'updateToothRecord', 'createTreatmentPlan', 'updatePlanItem', 'markInvoicePaid', 'cancelAppointment', 'rescheduleAppointment', 'moveToNextSlot']);
+const WRITE = new Set(['createAppointment', 'updateToothRecord', 'createTreatmentPlan', 'updatePlanItem', 'markInvoicePaid', 'cancelAppointment', 'rescheduleAppointment']);
 
 function runTool(u, name, args) {
   const fn = tools[name];

@@ -4,7 +4,6 @@ import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import PatientDetail from './pages/PatientDetail.jsx'
 import PublicBooking from './pages/PublicBooking.jsx'
-import Portal from './pages/Portal.jsx'
 import Landing from './pages/Landing.jsx'
 import LandingSection from './pages/LandingSection.jsx'
 import Admin from './pages/Admin.jsx'
@@ -38,18 +37,16 @@ export default function App() {
 
   const path = route.replace('#', '')
   const isPublic = path.startsWith('/book')
-  const isPortal = path.startsWith('/portal')
   const SECTION_PATHS = ['/about', '/services', '/why-choose', '/gallery', '/blog']
   const sectionPath = SECTION_PATHS.find(s => path === s)
   const isGuestHome = path === '' || path === '/' || path === '/home'
   const isAdminArea = me && (me.role === 'admin' || me.role === 'reception')
   // every route the app understands — anything else is a 404
-  const KNOWN = /^\/(dashboard|admin|login|book|portal|patients\/\d+|about|services|why-choose|gallery|blog)?$/
+  const KNOWN = /^\/(dashboard|admin|login|book|patients\/\d+|about|services|why-choose|gallery|blog)?$/
   const known = KNOWN.test(path)
 
   let page
   if (isPublic) page = <PublicBooking />
-  else if (isPortal) page = <Portal />
   else if (sectionPath) page = <LandingSection section={sectionPath.slice(1)} />
   else if (isGuestHome) page = me ? (me.role === 'admin' ? <Admin me={me} onLogout={() => setMe(null)} /> : <Dashboard me={me} onChat={openEra} onLogout={() => setMe(null)} />) : <Landing />
   else if (me === undefined) page = <div className="center">Loading…</div>

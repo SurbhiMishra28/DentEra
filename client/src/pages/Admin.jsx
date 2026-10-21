@@ -1,20 +1,15 @@
 ﻿import React, { useEffect, useState } from "react"
 import { api } from "../api.js"
 import DentEraMark from "../components/DentEraMark.jsx"
-import Notifications from "../components/Notifications.jsx"
-import ThemeToggle from "../components/ThemeToggle.jsx"
 import {
   Home, LayoutGrid, Calendar, Users, Wallet, Shield, ClipboardList, Globe,
   Stethoscope, Tooth, RotateCcw, AlertTriangle, LogOut, CalendarCheck, PieChart,
-  ShieldCheck, UserRound, Check, BarChart, Plus, XMark, TrendingUp, Box, Database,
-  Bell, Phone, UserRound as UserIcon,
+  ShieldCheck, UserRound, Check, BarChart,
 } from "../components/Icons.jsx"
 import StatusDonut, { STATUS_ORDER, STATUS_META } from "../components/StatusDonut.jsx"
-import TrendChart from "../components/TrendChart.jsx"
 import { downloadCSV, todayStamp } from "../utils/csv.js"
 import { printReceipt } from "../utils/receipt.js"
 import "../dashboard.css"
-import "../dashboard-v13.css"
 
 // Admin panel — clinic-wide view for role "admin" (and "reception", who share
 // the same read scope on the server). Same shell as the doctor Dashboard
@@ -41,15 +36,8 @@ const NAV = [
   ["overview", "Overview", Home],
   ["appointments", "Appointments", LayoutGrid],
   ["patients", "Patients", Users],
-  ["analytics", "Analytics", BarChart],
-  ["recall", "Recall", Phone],
   ["billing", "Billing", Wallet],
-  ["expenses", "Expenses", TrendingUp],
-  ["inventory", "Inventory", Box],
-  ["reminders", "Reminders", Bell],
   ["doctors", "Doctors", Stethoscope],
-  ["staff", "Staff", UserRound],
-  ["backups", "Backups", Database],
   ["audit", "Audit trail", Shield],
   ["settings", "Settings", ShieldCheck],
 ]
@@ -61,24 +49,10 @@ const SECTION_COPY = {
     desc: "Every dentist's bookings for the next 7 days — public bookings and doctor-made alike." },
   patients: { eyebrow: "CLINIC-WIDE", title: "Patients",
     desc: "The full clinic register across every dentist." },
-  analytics: { eyebrow: "PRACTICE", title: "Analytics",
-    desc: "Revenue, treatments, chair utilisation and the money in / money out picture for the clinic." },
-  recall: { eyebrow: "FOLLOW-UP", title: "Recall list",
-    desc: "Patients due for a check-up — last completed visit older than 6 months, or never seen." },
   billing: { eyebrow: "CLINIC-WIDE", title: "Billing",
     desc: "Invoices for the whole clinic — mark payments and print receipts as they come in." },
-  expenses: { eyebrow: "MONEY OUT", title: "Expenses & profit",
-    desc: "Every rupee the practice spends — logged by the front desk, summarised for the owner." },
-  inventory: { eyebrow: "STORE", title: "Inventory",
-    desc: "Consumables on the shelf — restock, consume, and watch the low-stock warnings." },
-  reminders: { eyebrow: "PATIENTS", title: "Reminders",
-    desc: "Appointment confirmations and 24-hour nudges — generate, send and skip." },
   doctors: { eyebrow: "TEAM", title: "Doctors",
     desc: "The clinic's dentists — add a new doctor and they can sign in right away." },
-  staff: { eyebrow: "TEAM", title: "Staff accounts",
-    desc: "Reception logins — they can run the front desk and billing, but never patient charts." },
-  backups: { eyebrow: "DATA", title: "Backups",
-    desc: "Daily database snapshots (the newest seven are kept). Create one right now any time." },
   audit: { eyebrow: "SECURITY", title: "Audit trail",
     desc: "The last 40 assistant and access events across the clinic." },
   settings: { eyebrow: "ACCOUNT", title: "Settings",
@@ -123,48 +97,13 @@ export default function Admin({ me, onLogout }) {
   const [msg, setMsg] = useState("")
   const [busyOut, setBusyOut] = useState(false)
 
-  // v1.3 state
-  const [insights, setInsights] = useState(null)
-  const [trend, setTrend] = useState([])
-  const [topTreatments, setTopTreatments] = useState([])
-  const [util, setUtil] = useState([])
-  const [pnl, setPnl] = useState(null)
-  const [recall, setRecall] = useState([])
-  const [expenses, setExpenses] = useState([])
-  const [expForm, setExpForm] = useState({ category: "material", description: "", amount: "", spent_at: "" })
-  const [items, setItems] = useState([])
-  const [itemForm, setItemForm] = useState({ name: "", unit: "pcs", stock_qty: "", min_qty: "", unit_cost: "" })
-  const [moves, setMoves] = useState(null)
-  const [reminders, setReminders] = useState([])
-  const [remForm, setRemForm] = useState({ patient_name: "", phone: "", channel: "sms", message: "", send_at: "" })
-  const [backups, setBackups] = useState([])
-  const [staff, setStaff] = useState([])
-  const [staffForm, setStaffForm] = useState({ name: "", email: "", password: "" })
-  const [busy, setBusy] = useState(false)
-
-  const isAdmin = me.role === "admin"
-  const loadExpenses = async () => setExpenses((await api.get("/api/expenses")).data.data || [])
-
-  async function loadDoctors() {
-    const { data } = await api.get("/api/admin/dentists")
-    setDoctors(data.data || [])
-  }
   async function loadInvoices() {
     const { data } = await api.get("/api/invoices")
     setInvoices(data.data || [])
   }
-  async function loadV13() {
-    const safe = p => p.catch(() => ({ data: { data: null } }))
-    const [an, tr, tt, ut, pl, rc, ex, inv, rm, bk, st] = await Promise.all([
-      safe(api.get("/api/admin/analytics/summary")), safe(api.get("/api/admin/analytics/trend")),
-      safe(api.get("/api/admin/analytics/top-treatments")), safe(api.get("/api/admin/analytics/utilization")),
-      safe(api.get("/api/finance/pnl")), safe(api.get("/api/admin/recall")),
-      safe(api.get("/api/expenses")), safe(api.get("/api/admin/inventory")),
-      safe(api.get("/api/admin/reminders")), safe(api.get("/api/admin/backups")), safe(api.get("/api/admin/staff"))])
-    setInsights(an.data.data || null); setTrend(tr.data.data || []); setTopTreatments(tt.data.data || [])
-    setUtil(ut.data.data || []); setPnl(pl.data.data || null); setRecall(rc.data.data || [])
-    setExpenses(ex.data.data || []); setItems(inv.data.data || []); setReminders(rm.data.data || [])
-    setBackups(bk.data.data || []); setStaff(st.data.data || [])
+  async function loadDoctors() {
+    const { data } = await api.get("/api/admin/dentists")
+    setDoctors(data.data || [])
   }
   useEffect(() => {
     ;(async () => {
@@ -173,7 +112,7 @@ export default function Admin({ me, onLogout }) {
         api.get("/api/admin/patients"), api.get("/api/admin/audit")])
       setOv(o.data.data || null); setAppts(a.data.data || [])
       setPatients(p.data.data || []); setAuditRows(au.data.data || [])
-      await Promise.all([loadInvoices(), loadDoctors(), loadV13()])
+      await Promise.all([loadInvoices(), loadDoctors()])
     })()
   }, [])
 
@@ -207,84 +146,6 @@ export default function Admin({ me, onLogout }) {
     const { status, data } = await api.post("/api/auth/change-password", { current: pw.current, next: pw.next })
     if (status === 200) { setMsg(data.message || "Password updated."); setPw({ current: "", next: "", confirm: "" }) }
     else setMsg(data.message || "Could not change the password.")
-  }
-
-  // ---------- v1.3 actions ----------
-  async function addExpense(e) {
-    e.preventDefault(); setMsg("")
-    const { status, data } = await api.post("/api/expenses", expForm)
-    if (status === 201) {
-      setMsg(`Expense logged — ${money(data.data.amount)} for ${expForm.description}.`)
-      setExpForm({ category: "material", description: "", amount: "", spent_at: "" })
-      await Promise.all([loadExpenses(), loadV13()])
-    } else setMsg(data.message || "Could not save the expense.")
-  }
-
-  async function moveStock(id, delta) {
-    const { status, data } = await api.post(`/api/inventory/${id}/move`, { delta, reason: delta > 0 ? "Restock" : "Used in clinic" })
-    setMsg(status === 200 ? `${data.data.name}: ${data.data.stock_qty} ${data.data.low ? "— LOW STOCK" : "in stock"}` : (data.message || "Could not adjust stock."))
-    if (status === 200) { setItems(list => list.map(i => i.id === id ? { ...i, stock_qty: data.data.stock_qty, low: data.data.low ? 1 : 0 } : i)); loadV13() }
-  }
-
-  async function addItem(e) {
-    e.preventDefault(); setMsg("")
-    const { status, data } = await api.post("/api/inventory", itemForm)
-    if (status === 201) {
-      setMsg(`Added ${data.data.name} to the store.`)
-      setItemForm({ name: "", unit: "pcs", stock_qty: "", min_qty: "", unit_cost: "" })
-      loadV13()
-    } else setMsg(data.message || "Could not add the item.")
-  }
-
-  async function runReminders() {
-    setBusy(true); setMsg("")
-    const { status, data } = await api.post("/api/admin/reminders/run")
-    setBusy(false)
-    if (status === 200) {
-      setMsg(`${data.data.planned} reminder(s) planned, ${data.data.sent} sent (provider: ${data.data.provider}).`)
-      loadV13()
-    } else setMsg(data.message || "Could not run the reminders.")
-  }
-
-  async function skipReminder(id, status) {
-    const r = await api.patch(`/api/admin/reminders/${id}`, { status })
-    setMsg(r.status === 200 ? "Reminder updated." : (r.data.message || "Could not update the reminder."))
-    loadV13()
-  }
-
-  async function createReminder(e) {
-    e.preventDefault(); setMsg("")
-    const { status, data } = await api.post("/api/admin/reminders", remForm)
-    if (status === 201) { setMsg("Reminder queued."); setRemForm({ patient_name: "", phone: "", channel: "sms", message: "", send_at: "" }); loadV13() }
-    else setMsg(data.message || "Could not queue the reminder.")
-  }
-
-  async function createBackup() {
-    setBusy(true); setMsg("")
-    const { status, data } = await api.post("/api/admin/backups")
-    setBusy(false)
-    if (status === 201) { setMsg(`Backup created — ${data.data.name} (${(data.data.bytes / 1024).toFixed(0)} KB).`); loadV13() }
-    else setMsg(data.message || "Could not create the backup.")
-  }
-
-  async function addStaff(e) {
-    e.preventDefault(); setMsg("")
-    const { status, data } = await api.post("/api/admin/staff", staffForm)
-    if (status === 201) {
-      setMsg(`${data.data.name} can now sign in with ${data.data.email}.`)
-      setStaffForm({ name: "", email: "", password: "" }); loadV13()
-    } else setMsg(data.message || "Could not add the staff account.")
-  }
-
-  async function removeStaff(id) {
-    const { status, data } = await api.del(`/api/admin/staff/${id}`)
-    setMsg(status === 200 ? "Staff account removed." : (data.message || "Could not remove the account."))
-    if (status === 200) loadV13()
-  }
-
-  async function showMoves(id) {
-    const { data } = await api.get(`/api/inventory/${id}/moves`)
-    setMoves({ item_id: id, rows: data.data || [] })
   }
 
   async function logout() {
@@ -355,11 +216,8 @@ export default function Admin({ me, onLogout }) {
         <div className="topbar dashboard-toolbar">
           <h1 className="ref-topbar-title">Admin Panel</h1>
           <span className="spacer" />
-          <ThemeToggle />
-          <Notifications />
-          <a className="mini" href="#/dashboard" title="Doctor dashboard" aria-label="Doctor dashboard"><Stethoscope size={14} /><span className="hide-sm">Doctor dashboard</span></a>
-          <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
-          <a className="mini" href="#/portal" title="Patient portal" aria-label="Patient portal"><Tooth size={14} /><span className="hide-sm">Patient portal</span></a>
+          <a className="mini" href="#/dashboard"><Stethoscope size={14} /> Doctor dashboard</a>
+          <a className="mini" href="#/book"><Globe size={14} /> Public booking</a>
           <button className="mini" onClick={() => window.location.reload()}><RotateCcw size={14} /> Refresh</button>
         </div>
 
@@ -603,336 +461,6 @@ export default function Admin({ me, onLogout }) {
                 <button type="submit" className="dash-cta-btn"><Check size={15} /> Add doctor</button>
               </div>
             </form>
-          </section>
-        )}
-
-        {/* ---------- v1.3: analytics ---------- */}
-        {section === "analytics" && (
-          <>
-            <div className="stats ref-stats ref-stats--4">
-              <Stat icon={<Wallet size={20} />} iconClass="stat-icon--green" color="mint"
-                label="COLLECTED (30 DAYS)" value={money(insights?.revenue_collected)} foot="payments recorded" />
-              <Stat icon={<CalendarCheck size={20} />} iconClass="stat-icon--sky" color="sky"
-                label="APPOINTMENTS" value={insights?.appointments ?? 0} foot={`${insights?.completed ?? 0} completed`} />
-              <Stat icon={<AlertTriangle size={20} />} iconClass="stat-icon--amber" color="amber"
-                label="NO-SHOW RATE" value={`${insights?.no_show?.rate ?? 0}%`} foot={`${insights?.no_show?.no_shows ?? 0} of ${insights?.no_show?.total ?? 0}`} />
-              <Stat icon={<Users size={20} />} iconClass="stat-icon--teal" color="teal"
-                label="NEW PATIENTS" value={insights?.new_patients ?? 0} foot="added in this window" />
-            </div>
-
-            <div className="ref-grid ref-grid--b">
-              <section className="panel ref-card">
-                <CardHead icon={<BarChart size={17} />} eyebrow="REVENUE & VISITS" title="Daily trend (30 days)" />
-                <TrendChart data={trend} />
-                <div className="trendlegend" aria-hidden="true">
-                  <span><i /> Money collected</span><span><i className="dot" /> Appointments</span>
-                </div>
-              </section>
-              <section className="panel ref-card">
-                <CardHead icon={<Wallet size={17} />} eyebrow="MONEY IN / MONEY OUT" title="Profit & loss"
-                  right={`${pnl ? `${pnl.from} → ${pnl.to}` : ""}`} />
-                <ul className="list">
-                  <li className="invrow"><span>Collected from patients</span><b>{money(pnl?.income)}</b></li>
-                  <li className="invrow"><span>Paid out (expenses)</span><b>− {money(pnl?.expense)}</b></li>
-                  <li className="invrow"><span><b>Net</b></span><b className={pnl && pnl.profit >= 0 ? "ok" : "err"}>{money(pnl?.profit)}</b></li>
-                </ul>
-                <div className="ref-glance" style={{ marginTop: ".8rem" }}>
-                  {(pnl?.by_method || []).map(m => (
-                    <div key={m.method}><small>{m.method.toUpperCase()}</small><b>{money(m.c)}</b></div>
-                  ))}
-                  {(pnl?.by_category || []).map(c => (
-                    <div key={c.category}><small>{c.category.toUpperCase()}</small><b>{money(c.c)}</b></div>
-                  ))}
-                  {(pnl?.by_method || []).length === 0 && (pnl?.by_category || []).length === 0 &&
-                    <p className="empty">No payments or expenses in this window yet.</p>}
-                </div>
-              </section>
-            </div>
-
-            <div className="grid2">
-              <section className="panel ref-card">
-                <CardHead icon={<Tooth size={17} />} eyebrow="PROCEDURES" title="Top treatments" />
-                {topTreatments.length === 0 && <p className="empty">No treatment records yet.</p>}
-                <ul className="list">
-                  {topTreatments.map(t => (
-                    <li key={t.name}>
-                      <span className="apptbody">
-                        <b>{t.name}</b>
-                        <span className="ref-status-track" style={{ width: 110 }}>
-                          <i style={{ width: `${Math.round((t.c / Math.max(1, topTreatments[0].c)) * 100)}%`, background: "var(--mint)" }} />
-                        </span>
-                      </span>
-                      <span className="muted">{t.c}× · {money(t.v)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-              <section className="panel ref-card">
-                <CardHead icon={<Stethoscope size={17} />} eyebrow="TEAM" title="Chair utilisation" />
-                {util.length === 0 && <p className="empty">Nothing booked in this window yet.</p>}
-                <ul className="list">
-                  {util.map(u => (
-                    <li key={u.dentist}>
-                      <span className="apptbody"><b>{u.dentist}</b></span>
-                      <span className="muted">{u.completed}/{u.booked} completed · no-show {u.no_show_rate}%</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </div>
-          </>
-        )}
-
-        {/* ---------- v1.3: recall ---------- */}
-        {section === "recall" && (
-          <section className="panel ref-card">
-            <CardHead icon={<Phone size={17} />} eyebrow="FOLLOW-UP" title="Patients due for a check-up"
-              right={<span className="rowgap" style={{ marginTop: 0 }}>
-                <button className="mini" onClick={() => downloadCSV(`dentera-recall-${todayStamp()}.csv`,
-                  ["ID", "Name", "Phone", "Last visit", "Visits"], recall.map(p => [p.id, p.name, p.phone, p.due, p.visits]))}>Export CSV</button>
-                <span>{recall.length} due</span></span>} />
-            {recall.length === 0 && <p className="empty">Everyone has visited in the last 6 months — no recalls due.</p>}
-            <div className="tablewrap">
-              <table className="tbl">
-                <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Visits</th><th>Last completed visit</th></tr></thead>
-                <tbody>
-                  {recall.map(p => (
-                    <tr key={p.id}>
-                      <td className="muted">{p.id}</td>
-                      <td><a href={`#/patients/${p.id}`}><b>{p.name}</b></a></td>
-                      <td>{p.phone || "—"}</td>
-                      <td>{p.visits}</td>
-                      <td>{p.due === "never-seen" ? <span className="warnpill pill"><AlertTriangle size={11} /> never seen</span> : p.due}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* ---------- v1.3: expenses ---------- */}
-        {section === "expenses" && (
-          <>
-            <div className="stats ref-stats ref-stats--2">
-              <Stat icon={<TrendingUp size={20} />} iconClass="stat-icon--green" color="mint"
-                label="MONEY IN (30D)" value={money(pnl?.income)} foot="recorded payments" />
-              <Stat icon={<Wallet size={20} />} iconClass="stat-icon--amber" color="amber"
-                label="MONEY OUT (30D)" value={money(pnl?.expense)} foot="logged expenses" />
-            </div>
-            <section className="panel ref-card">
-              <CardHead icon={<TrendingUp size={17} />} eyebrow="NET" title={`Profit — ${pnl ? money(pnl.profit) : "—"}`}
-                right={<span className="rowgap" style={{ marginTop: 0 }}>
-                  <button className="mini" onClick={() => downloadCSV(`dentera-expenses-${todayStamp()}.csv`,
-                    ["ID", "Date", "Category", "Description", "Amount", "By"],
-                    expenses.map(e => [e.id, e.spent_at, e.category, e.description, e.amount, e.created_by_name || ""]))}>Export CSV</button>
-                </span>} />
-              <form className="rowForm dash-form" onSubmit={addExpense} aria-label="Log an expense" style={{ marginBottom: "1rem" }}>
-                <div className="grid3">
-                  <label>Category
-                    <select value={expForm.category} onChange={e => setExpForm({ ...expForm, category: e.target.value })}>
-                      {["rent", "salary", "lab", "material", "utility", "marketing", "equipment", "other"].map(c =>
-                        <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </label>
-                  <label>Description <input value={expForm.description} onChange={e => setExpForm({ ...expForm, description: e.target.value })} placeholder="e.g. lab bill — crowns" required /></label>
-                  <label>Amount (₹) <input type="number" min="1" value={expForm.amount} onChange={e => setExpForm({ ...expForm, amount: e.target.value })} required /></label>
-                  <label>Spent on <input type="date" value={expForm.spent_at} onChange={e => setExpForm({ ...expForm, spent_at: e.target.value })} /></label>
-                </div>
-                <button type="submit" className="dash-cta-btn"><Plus size={15} /> Log expense</button>
-              </form>
-              <ul className="list">
-                {expenses.map(e => (
-                  <li key={e.id} className="invrow">
-                    <span><b>{money(e.amount)}</b> — {e.description}
-                      <span className="muted"> · {e.category} · {e.spent_at}{e.created_by_name ? ` · ${e.created_by_name}` : ""}</span></span>
-                  </li>
-                ))}
-                {expenses.length === 0 && <p className="empty">No expenses logged yet.</p>}
-              </ul>
-            </section>
-          </>
-        )}
-
-        {/* ---------- v1.3: inventory ---------- */}
-        {section === "inventory" && (
-          <>
-            {(items.filter(i => i.low).length > 0) && (
-              <div className="panel ref-card lowstock" role="status">
-                <CardHead icon={<AlertTriangle size={17} />} eyebrow="RESTOCK" title="Low stock" right={`${items.filter(i => i.low).length} item(s)`} />
-                <ul className="list">
-                  {items.filter(i => i.low).map(i => (
-                    <li key={i.id} className="invrow">
-                      <span><b>{i.name}</b> — {i.stock_qty} {i.unit} left (minimum {i.min_qty})</span>
-                      <button className="mini mini--ok" onClick={() => moveStock(i.id, i.min_qty * 2)}>Restock +{i.min_qty * 2}</button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <section className="panel ref-card">
-              <CardHead icon={<Box size={17} />} eyebrow="STORE" title="Inventory" right={`${items.length} item(s)`} />
-              <form className="rowForm dash-form" onSubmit={addItem} aria-label="Add a store item" style={{ marginBottom: "1rem" }}>
-                <div className="grid3">
-                  <label>Item <input value={itemForm.name} onChange={e => setItemForm({ ...itemForm, name: e.target.value })} placeholder="e.g. Composite resin" required /></label>
-                  <label>Unit <input value={itemForm.unit} onChange={e => setItemForm({ ...itemForm, unit: e.target.value })} /></label>
-                  <label>Stock <input type="number" min="0" value={itemForm.stock_qty} onChange={e => setItemForm({ ...itemForm, stock_qty: e.target.value })} /></label>
-                  <label>Minimum <input type="number" min="0" value={itemForm.min_qty} onChange={e => setItemForm({ ...itemForm, min_qty: e.target.value })} /></label>
-                  <label>Unit cost (₹) <input type="number" min="0" value={itemForm.unit_cost} onChange={e => setItemForm({ ...itemForm, unit_cost: e.target.value })} /></label>
-                </div>
-                <button type="submit" className="dash-cta-btn"><Plus size={15} /> Add item</button>
-              </form>
-              <ul className="list">
-                {items.map(i => (
-                  <li key={i.id} className="invrow">
-                    <span>
-                      <b>{i.name}</b>
-                      <span className="muted"> · {i.stock_qty} {i.unit} · min {i.min_qty} · {money(i.unit_cost)}/{i.unit}</span>
-                      {i.low ? <span className="warnpill pill"><AlertTriangle size={11} /> low</span> : null}
-                    </span>
-                    <span className="rowgap">
-                      <button className="mini mini--ok" onClick={() => moveStock(i.id, 1)}>+1</button>
-                      <button className="mini" onClick={() => moveStock(i.id, -1)}>−1</button>
-                      <button className="mini" onClick={() => showMoves(i.id)}>history</button>
-                    </span>
-                  </li>
-                ))}
-                {items.length === 0 && <p className="empty">The store is empty — add consumables above.</p>}
-              </ul>
-              {moves && (
-                <div className="toothpanel">
-                  <h4>Stock movements — item #{moves.item_id}</h4>
-                  <ul className="list">
-                    {moves.rows.map(m => (
-                      <li key={m.id}>
-                        <b>{m.delta > 0 ? `+${m.delta}` : m.delta}</b>
-                        <span className="muted"> · {m.reason || "—"} · {m.user_name || "system"} · {(m.created_at || "").replace("T", " ").slice(0, 16)}</span>
-                      </li>
-                    ))}
-                    {moves.rows.length === 0 && <p className="empty">No movements yet.</p>}
-                  </ul>
-                  <button className="mini" onClick={() => setMoves(null)}>Close</button>
-                </div>
-              )}
-            </section>
-          </>
-        )}
-
-        {/* ---------- v1.3: reminders ---------- */}
-        {section === "reminders" && (
-          <section className="panel ref-card">
-            <CardHead icon={<Bell size={17} />} eyebrow="PATIENTS" title="Reminders"
-              right={<span className="rowgap" style={{ marginTop: 0 }}>
-                <button className="mini primary ask-era" onClick={runReminders} disabled={busy}>
-                  <Bell size={13} /> {busy ? "Sending…" : "Plan + send due"}
-                </button>
-                <span>{reminders.filter(r => r.status === "pending").length} pending</span></span>} />
-            <p className="muted" style={{ marginTop: 0 }}>
-              Provider: <b>{reminders[0]?.provider || "console"}</b>. No SMS gateway configured — messages are logged on the server and marked sent,
-              so the workflow is honest end-to-end. Set REMINDER_WEBHOOK_URL to POST to your own relay.
-            </p>
-            <form className="rowForm dash-form" onSubmit={createReminder} aria-label="Queue a custom reminder" style={{ marginBottom: "1rem" }}>
-              <div className="grid3">
-                <label>Patient <input value={remForm.patient_name} onChange={e => setRemForm({ ...remForm, patient_name: e.target.value })} placeholder="Ravi Kumar" /></label>
-                <label>Phone / email <input value={remForm.phone} onChange={e => setRemForm({ ...remForm, phone: e.target.value })} /></label>
-                <label>Channel
-                  <select value={remForm.channel} onChange={e => setRemForm({ ...remForm, channel: e.target.value })}>
-                    <option value="sms">SMS</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option>
-                  </select>
-                </label>
-                <label className="wide">Message <input value={remForm.message} onChange={e => setRemForm({ ...remForm, message: e.target.value })} placeholder="e.g. Your crown is ready for fitting." required /></label>
-                <label>Send on <input type="date" value={remForm.send_at} onChange={e => setRemForm({ ...remForm, send_at: e.target.value })} /></label>
-              </div>
-              <button type="submit" className="dash-cta-btn"><Plus size={15} /> Queue reminder</button>
-            </form>
-            <div className="tablewrap">
-              <table className="tbl">
-                <thead><tr><th>Send at</th><th>Patient</th><th>Channel</th><th>Kind</th><th>Message</th><th>Status</th><th /></tr></thead>
-                <tbody>
-                  {reminders.map(r => (
-                    <tr key={r.id}>
-                      <td className="muted">{(r.send_at || "").replace("T", " ").slice(0, 16)}</td>
-                      <td>{r.patient_name || "—"}</td>
-                      <td className="muted">{r.channel}</td>
-                      <td className="muted">{r.kind}</td>
-                      <td className="muted" style={{ maxWidth: 260 }}>{r.message}</td>
-                      <td><span className={"stchip " + (r.status === "sent" ? "st-completed" : r.status === "failed" ? "st-cancelled" : "st-scheduled")}>{r.status}</span></td>
-                      <td>
-                        {(r.status === "pending" || r.status === "failed") &&
-                          <button className="mini" onClick={() => skipReminder(r.id, "skipped")}>skip</button>}
-                        {r.status === "skipped" && <button className="mini" onClick={() => skipReminder(r.id, "pending")}>re-open</button>}
-                      </td>
-                    </tr>
-                  ))}
-                  {reminders.length === 0 && <tr><td colSpan="7" className="empty">No reminders yet — plan them from today's appointments with one click.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* ---------- v1.3: staff ---------- */}
-        {section === "staff" && (
-          <section className="panel ref-card">
-            <CardHead icon={<UserRound size={17} />} eyebrow="TEAM" title="Staff accounts" right={`${staff.length} reception`} />
-            <p className="muted" style={{ marginTop: 0 }}>Reception can run the front desk: appointments, public bookings, invoices and receipts. Charts and treatment plans stay dentist-only.</p>
-            <div className="tablewrap">
-              <table className="tbl">
-                <thead><tr><th>#</th><th>Name</th><th>Email (sign-in)</th><th>Since</th><th /></tr></thead>
-                <tbody>
-                  {staff.map(s => (
-                    <tr key={s.id}>
-                      <td className="muted">{s.id}</td>
-                      <td><b>{s.name}</b></td>
-                      <td>{s.email}</td>
-                      <td className="muted">{(s.created_at || "").slice(0, 10)}</td>
-                      <td>{isAdmin && <button className="mini mini--danger" onClick={() => removeStaff(s.id)}><XMark size={13} /> remove</button>}</td>
-                    </tr>
-                  ))}
-                  {staff.length === 0 && <tr><td colSpan="5" className="empty">No reception accounts yet.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-            {isAdmin && (
-              <form className="dash-book" style={{ marginTop: "1.2rem" }} onSubmit={addStaff} aria-label="Add a staff account">
-                <div className="dash-book__banner">
-                  <span className="dash-book__banner-icon" aria-hidden="true"><UserRound size={26} /></span>
-                  <div><h3>Add a reception account</h3><p>They sign in immediately with the email + temporary password.</p></div>
-                </div>
-                <div className="rowForm">
-                  <div className="grid3">
-                    <label>Name <input value={staffForm.name} onChange={e => setStaffForm({ ...staffForm, name: e.target.value })} placeholder="Reena Receptionist" required /></label>
-                    <label>Email (sign-in) <input type="email" value={staffForm.email} onChange={e => setStaffForm({ ...staffForm, email: e.target.value })} placeholder="reena@dental.local" required /></label>
-                    <label>Temporary password <input value={staffForm.password} onChange={e => setStaffForm({ ...staffForm, password: e.target.value })} placeholder="at least 6 characters" minLength={6} required /></label>
-                  </div>
-                  <button type="submit" className="dash-cta-btn"><Check size={15} /> Add staff</button>
-                </div>
-              </form>
-            )}
-          </section>
-        )}
-
-        {/* ---------- v1.3: backups ---------- */}
-        {section === "backups" && (
-          <section className="panel ref-card">
-            <CardHead icon={<Database size={17} />} eyebrow="DATA" title="Database backups"
-              right={<span className="rowgap" style={{ marginTop: 0 }}>
-                <button className="mini primary ask-era" onClick={createBackup} disabled={busy}>
-                  <Database size={13} /> {busy ? "Saving…" : "Backup now"}
-                </button>
-                <span>newest {backups.length} kept</span></span>} />
-            <p className="muted" style={{ marginTop: 0 }}>
-              A snapshot is taken automatically every 24 hours. These are full database copies — keep them off this machine for real safety.
-              Until then, treat the demo store as disposable.
-            </p>
-            <ul className="list">
-              {backups.map(b => (
-                <li key={b.name} className="invrow">
-                  <span><b>{b.name}</b><span className="muted"> · {(b.bytes / 1024).toFixed(0)} KB · {(b.created_at || "").replace("T", " ").slice(0, 16)}</span></span>
-                </li>
-              ))}
-              {backups.length === 0 && <p className="empty">No backups yet — create the first one now.</p>}
-            </ul>
           </section>
         )}
 

@@ -1,6 +1,6 @@
 # DentEra — Dental Care for Doctors · PRD
 
-**Version:** 1.3.0 · **Date:** 2026-10-21 · **Status:** Shipped (v1.3.0 — see Task.md)
+**Version:** 1.1.0 · **Date:** 2026-10-06 · **Status:** Planning (no code yet)
 **Parent project:** [../Prd.md](../Prd.md) (Era v4.5 general clinic assistant — this is a SEPARATE sub-project in `dental/`)
 
 ## 1. Product in one line
@@ -30,15 +30,13 @@ stack as Era.
 
 | # | Story | Status |
 |---|---|---|
-| U1 | As a dentist I log in (email+password or demo) and see my day | ✅ shipped |
-| U2 | As a dentist I open a patient's **dental chart** and mark tooth 16 as decayed / tooth 36 root-canal done | ✅ shipped |
-| U3 | As a dentist I create a **treatment plan** ("RCT on 36, crown on 36 — 3 visits") and track each item | ✅ shipped |
-| U4 | As a dentist I ask *"my appointments tomorrow"* / *"show Ravi's chart"* and hear the answer in Sofia's voice | ✅ shipped |
-| U5 | As reception I see **unpaid invoices** and mark one paid (+ payment ledger + UPI link) | ✅ shipped |
-| U6 | As a patient I visit the public page, pick a dentist + free slot, and book with my name+phone | ✅ shipped |
-| U7 | As a dentist I see bookings that came from the public page marked `source:public` | ✅ shipped |
-| U8 | As a patient I sign into the portal with my phone (+ dob) to see visits, bills, records and files — and book/cancel/pay | ✅ shipped (v1.3) |
-| U9 | As an admin I run the clinic: staff, expenses, P&L, inventory, reminders, backups, audit | ✅ shipped (v1.3) |
+| U1 | As a dentist I log in (email+password or demo) and see my day | ❌ to build |
+| U2 | As a dentist I open a patient's **dental chart** and mark tooth 16 as decayed / tooth 36 root-canal done | ❌ to build |
+| U3 | As a dentist I create a **treatment plan** ("RCT on 36, crown on 36 — 3 visits") and track each item | ❌ to build |
+| U4 | As a dentist I ask *"my appointments tomorrow"* / *"show Ravi's chart"* and hear the answer in Sofia's voice | ❌ to build |
+| U5 | As reception I see **unpaid invoices** and mark one paid | ❌ to build |
+| U6 | As a patient I visit the public page, pick a dentist + free slot, and book with my name+phone | ❌ to build |
+| U7 | As a dentist I see bookings that came from the public page marked `source:public` | ❌ to build |
 
 ## 5. Functional requirements
 
@@ -50,23 +48,14 @@ stack as Era.
 - **FR6 Public booking** — `/book` page (no login): dentist → next-14-days date → free slot → name+phone+reason; rate-limited
 - **FR7 AI assistant** — voice-first (NVIDIA Sofia, EN+HI) + chat panel with per-day history (same UX as Era v4.5 chat panel)
 - **FR8 Audit** — every assistant tool call and public booking attempt lands in `assistant_audit`
-- **FR9 Patient portal** — phone (+dob) sign-in, own low-power role `patient`; scoped visits, bills, chart, files; book/cancel/pay
-- **FR10 Payments & money** — payments ledger (method+reference), printable statement, local UPI link, expenses + cash-basis P&L, inventory with low-stock alerts
-- **FR11 Clinical records** — X-ray/photo/report uploads (authed streaming), printable prescriptions, six-site periodontal charting
-- **FR12 Ops** — reminders (pluggable console/webhook provider), in-app notifications with SSE push, daily DB backups (newest 7)
-- **FR13 Insights** — revenue/appointment trend, top treatments, chair utilisation, recall list (SVG, no chart lib)
-- **FR14 Static storefront** — landing page + section pages + public booking funnel deliverable without any login (see Features.md → Static features)
-- **FR15 Admin console** — one screen for clinic-wide overview + dentists/staff/backups writes
 
 ## 6. Non-goals (v1)
 
-Shipped since v1.1 — **patient portal** (phone + dob sign-in), **UPI links + recorded payments with
-history**, and **X-ray/report uploads** all landed in v1.3.0 (Features.md F16–F21). Still out of scope:
-
-- ❌ Hosted payment capture (card gateway with payouts) — the clinic records cash/UPI payments and UPI links are generated locally
+- ❌ Patient login/portal — patients book as guests; portal is Phase 2
+- ❌ Payments gateway (UPI/card) — invoices record manual payments only
+- ❌ X-ray/image uploads — text records only in v1
 - ❌ Multi-clinic chains — one clinic per deployment
 - ❌ Real LLM — assistant is the deterministic Era-style engine (predictability in a medical context)
-- ❌ Durable production database — SQLite + daily backups; Postgres is the documented next step (README → "Data durability")
 
 ## 7. Success criteria
 

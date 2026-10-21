@@ -19,7 +19,6 @@ function toolReply(tool, out, intent) {
     if (tool === 'createAppointment') return `Booked your appointment (#${out.appointment_id}).`;
     if (tool === 'rescheduleAppointment') return `Rescheduled appointment #${out.appointment_id} to ${out.date} at ${out.start_time}.`;
     if (tool === 'cancelAppointment') return `Cancelled appointment #${out.appointment_id}.`;
-    if (tool === 'moveToNextSlot') return `Moved appointment #${out.appointment_id} to the next free slot: ${out.date} at ${out.start_time}.`;
     if (tool === 'updateToothRecord') return `Recorded tooth ${out.tooth_fdi} as ${out.tooth_status.replace('_', ' ')}.`;
     if (tool === 'createTreatmentPlan') return `Created the treatment plan (#${out.plan_id}) with an estimate of ₹${out.total_estimate}.`;
     if (tool === 'updatePlanItem') return `Plan item marked ${out.status}.`;
