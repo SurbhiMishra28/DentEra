@@ -1,10 +1,11 @@
 # DentEra — Features list with implementation
 
-**Version:** 1.1.0 · **Date:** 2026-10-06
+**Version:** 1.3.0 · **Date:** 2026-10-21
 Companion docs: [Prd.md](Prd.md) (why) · [Flows.md](Flows.md) (step-by-step behaviour) · [Task.md](Task.md) (when).
-Status marks: ❌ not built · 🔶 partial · ✅ done. **Everything below is planned, nothing built yet.**
-**Stack note (v1.1.0):** server = Express + better-sqlite3, client = React (Vite) — "Era pattern" below
-means copy the LOGIC, not the framework.
+Status marks: ❌ not built · 🔶 partial · ✅ done.
+**Stack note (v1.3.0):** server = Express + better-sqlite3, client = React (Vite) — "Era pattern" below
+means copy the LOGIC, not the framework. v1.1.0 → v1.3.0 added the patient portal, payments,
+clinical records, reminders, analytics and the security backstops listed under F16.
 
 ## Quick map — feature → phase → core files
 
@@ -88,3 +89,116 @@ means copy the LOGIC, not the framework.
 
 ## F14 — Health & ops ❌
 **What:** `/api/health` → `{ok, db:'sqlite', version}` for uptime checks; no-cache static; `?v=` asset busting; own `render.yaml` in Phase 7.
+
+---
+
+# v1.3.0 — added features (all ✅ built, all tested)
+
+Stack unchanged: Express + better-sqlite3 + React (Vite). Additive-only migrations (new tables
+`payments`, `expenses`, `inventory_items`, `inventory_moves`, `documents`, `prescriptions`,
+`prescription_items`, `perio_records`, `perio_measurements`, `reminders`, `notifications`).
+`users` gained the `reception` (staff) + `patient` (portal) roles and a `patient_id` link
+(one guarded table rebuild — ids, hashes and chat history preserved).
+
+| ID | Feature | Key tables | Endpoints | UI home |
+|---|---|---|---|---|
+| F16 | Patient portal | users(`patient`) | `/api/portal/*` | Portal page (`#/portal`) |
+| F17 | Payments + history | payments | `/api/invoices/:id/payments`, `…/statement`, `…/upi` | Dashboard → Billing |
+| F18 | Expenses & profit/loss | expenses | `/api/expenses`, `/api/finance/pnl` | Admin → Expenses |
+| F19 | Inventory + low-stock alerts | inventory_items, inventory_moves | `/api/inventory*` | Admin → Inventory |
+| F20 | Documents (X-rays, reports) | documents | `/api/documents`, `/api/patients/:id/documents` | PatientDetail → Files |
+| F21 | Prescriptions (printable) | prescriptions, prescription_items | `/api/prescriptions*` | PatientDetail → Prescriptions |
+| F22 | Periodontal charting | perio_records, perio_measurements | `/api/chart/:patientId/perio` | PatientDetail → Periodontal |
+| F23 | Reminders (pluggable provider) | reminders | `/api/admin/reminders*` | Admin → Reminders |
+| F24 | Analytics + recall list | (reads others) | `/api/analytics/*`, `/api/recall` | Dashboard → Insights / Recall |
+| F25 | Week view (drag to move) | (reads appointments) | `/api/appointments?from&to` | Dashboard → Week view |
+| F26 | Reception staff accounts | users(`reception`) | `/api/admin/staff*` | Admin → Staff |
+| F27 | Live notifications (SSE) | notifications | `/api/stream`, `/api/notifications` | bell in every toolbar |
+| F28 | Dark mode | — | — | toggle in every toolbar |
+| F29 | Security backstops | — | global rate limiter + CSRF guard | — |
+| F30 | Daily database backups | — | `/api/admin/backups*` | Admin → Backups |
+
+## F16 — Patient portal ✅
+Sign-in by **phone + date of birth** (no password): the portal JWT carries `patientId`, every query
+is scoped to it, and a dentist token on `/api/portal/me` is a 403. Patients see their visits
+(book + cancel), invoices (pay with method + reference), tooth records, plans and shared files.
+A booking made in the portal is `source='public'` and still passes the interval-overlap check.
+
+## F17 — Payments ✅
+`recordPayment` appends a `payments` row and recomputes the invoice from the **sum of payments**
+(overpayment refused, ≥ due amount → paid). History per invoice, a printable statement
+(invoice + patient + plan items + payment list), and a **UPI deep link** per outstanding invoice
+(copy or open in any UPI app; the payment is still recorded by hand once the money lands).
+
+## F18 — Expenses & profit/loss ✅
+`expenses` (rent/salary/lab/material/utility/marketing/equipment/other) logged by staff; `/api/finance/pnl`
+compares money in (payments in window) with money out and shows the split by method and category.
+
+## F19 — Inventory ✅
+Consumables with `stock_qty` / `min_qty` / `unit_cost`; ±1 (or bulk restock) writes an `inventory_moves`
+row with a reason. Crossing the minimum raises a **low-stock notification** (bell + SSE) and a
+restock shortcut on the Admin panel. Full movement history per item.
+
+## F20 — Documents ✅
+Base64 upload (JPG/PNG/WEBP/GIF/PDF, ≤ 6 MB) stored **outside the web root** in `server/uploads/`
+and streamed through an authenticated route — no public static path. Ownership enforced
+(another dentist gets 404, never a byte). Optional per-tooth tagging; view + delete in the UI.
+
+## F21 — Prescriptions ✅
+Diagnosis + advice + medicine lines (dose / frequency / days), printed through the same
+print-window pattern as receipts (`utils/printRx.js`) — the browser dialog can "Save as PDF".
+History per patient with a one-click reprint.
+
+## F22 — Periodontal charting ✅
+Six sites per tooth (pocket depth 0–15 mm, bleeding on/off, recession) in one POST; the summary
+returns max/average depth, bleeding count and a mild/moderate/severe verdict per tooth — the data
+a perio re-evaluation actually needs.
+
+## F23 — Reminders ✅
+`generate()` plans one 24h reminder per visit in the next 24 h (public bookings get an instant
+confirmation from the booking route), `runDue()` sends what is due through a **provider**:
+`console` (logs, honest default) or `webhook` (`REMINDER_WEBHOOK_URL` → your own SMS/email/WhatsApp
+relay). The front desk can queue custom reminders and skip/re-open any row. Run by a 5-minute loop
+plus an on-demand button, and each send raises a staff notification.
+
+## F24 — Analytics + recall ✅
+`/api/analytics/*` (own practice for a dentist, clinic-wide for admin): daily revenue + appointment
+trend, top treatments, chair utilisation, no-show rate, and the **recall list** (no completed visit
+in 6 months, or never seen). Rendered as inline SVG — still no chart library.
+
+## F25 — Week view ✅
+Seven columns from `/api/appointments?from&to`; a visit card can be dragged to another day, which
+PATCHes the appointment (the server re-checks overlaps, so a clash is refused with a message).
+
+## F26 — Reception staff accounts ✅
+Admin creates `reception` logins: the front desk may run appointments, public bookings, invoices and
+receipts, but charts and treatment plans stay dentist-only (403). Only `admin` may add/remove staff.
+
+## F27 — Live notifications ✅
+`notifications` + an SSE hub at `/api/stream` (EventSource rides the cookie): public bookings,
+payments, low stock, backups and reminders appear in the bell instantly, with a 60 s polling
+fallback and per-item or mark-all read.
+
+## F28 — Dark mode ✅
+`data-theme="dark"` on `<html>` with token overrides (`dark.css`) and a follow-system default;
+the choice persists in `localStorage`. The toggle lives in every toolbar.
+
+## F29 — Security backstops ✅
+- Global per-IP limiter (GET 600/min, writes 300/min) as a **backstop** — sign-in (8/15 min) and
+  public booking (5/10 min) keep their own stricter counters.
+- CSRF guard: a state-changing request carrying the session cookie must come from our own origin.
+- Audit rows on payments, expenses, inventory moves, prescriptions, perio, reminders, staff
+  changes and backups — all with `request_id`.
+
+## F30 — Daily backups ✅
+`db.backup()` snapshot every 24 h (plus on demand), newest seven kept, each one announced in the bell.
+**Not a substitute for Postgres**: Render's free disk is ephemeral, so treat the demo store as disposable
+and move to a managed database for real clinic use (see README → "Data durability").
+
+## Deliberately not built (and why)
+- **Postgres driver** — needs a package install and a managed database; SQLite remains the default
+  and every query already goes through one service layer (`tools.js` / `analytics.js`), so the swap
+  is contained. The README documents the migration path.
+- **SMS / WhatsApp gateway** — a provider account is per-clinic; the `webhook` provider is the seam.
+- **Hindi UI** — the assistant already answers and *speaks* Hindi (HI-IN voice + Hinglish detection);
+  a full UI translation is a bigger change than a feature and is tracked as a future item.

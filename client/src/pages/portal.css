@@ -1,0 +1,26 @@
+/* portal.css — patient portal (phone + dob sign-in, visits, bills, records, files).
+   Reuses the clinic design tokens; mobile-first single-column rhythm. */
+.portalview{max-width:980px}
+.portallogin{max-width:460px;margin:8vh auto 0;padding:2rem}
+.portallogin__head{display:flex;gap:1rem;align-items:center;margin-bottom:1.4rem}
+.portallogin__icon{flex:0 0 auto;width:52px;height:52px;display:grid;place-items:center;border-radius:50%;
+  background:var(--grad);color:#fff;box-shadow:var(--shadow-button)}
+.portallogin h2{margin:0}
+.portallogin form{display:grid;gap:.9rem}
+.portallogin label{display:grid;gap:.35rem;font-size:.85rem;font-weight:700;color:var(--ink)}
+.portallogin label small{font-weight:500;color:var(--mut)}
+.portallogin__note{margin:1.1rem 0 0;font-size:.78rem;color:var(--mut);line-height:1.6}
+.portalnav{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 1.2rem}
+.portalnav button{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1rem;border-radius:999px;
+  background:#fff;color:var(--mut);font-weight:700;font-size:.85rem;border:1.5px solid var(--line);
+  box-shadow:var(--shadow-sm)}
+.portalnav button.is-active{background:var(--grad);color:#fff;border-color:transparent}
+.portalnav button span{display:inline-grid;place-items:center}
+.portal-billing .invrow{align-items:center}
+.portalpay{margin-top:1.2rem;display:grid;gap:1rem;background:var(--bg-secondary)}
+.portalpay h4{margin:0}
+.portalpay .rowgap{display:flex;gap:.5rem;flex-wrap:wrap}
+@media(max-width:640px){
+  .portallogin{margin:3vh auto 0;padding:1.4rem}
+  .portalview .grid2{grid-template-columns:1fr}
+}

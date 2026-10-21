@@ -35,6 +35,34 @@ for (const col of ['email TEXT', 'address TEXT']) {
   catch (e) { if (!/duplicate column name/i.test(e.message)) console.warn(`[dentera] ${col.split(' ')[0]} migration skipped:`, e.message); }
 }
 
+// v1.3 migration: users gains the 'reception' (staff) + 'patient' (portal) roles and a
+// patient_id link. SQLite cannot alter a CHECK constraint, so the table is rebuilt
+// (ids, hashes and chat history are preserved; this runs only once).
+try {
+  const sql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+  if (sql && !/'patient'/.test(sql.sql)) {
+    db.pragma('foreign_keys = OFF');
+    db.exec(`
+      CREATE TABLE users_v13(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN('dentist','admin','reception','patient')),
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        patient_id INTEGER REFERENCES patients(id),
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO users_v13(id,name,role,email,password_hash,patient_id,created_at,updated_at)
+        SELECT id,name,role,email,password_hash,NULL,created_at,updated_at FROM users;
+      DROP TABLE users;
+      ALTER TABLE users_v13 RENAME TO users;
+    `);
+    db.pragma('foreign_keys = ON');
+    console.log('[dentera] users table migrated to v1.3 roles (reception + patient)');
+  }
+} catch (e) { console.warn('[dentera] users v1.3 migration skipped:', e.message); }
+
 // ---------------- helpers (Era's local-date logic — never toISOString for day math) ----------------
 const pad2 = n => String(n).padStart(2, '0');
 const localDay = off => { const d = new Date(); d.setDate(d.getDate() + (off || 0));
@@ -141,13 +169,43 @@ function ensureAdmin() {
     db.prepare('INSERT INTO users(name,role,email,password_hash) VALUES (?,?,?,?)')
       .run('Clinic Admin', 'admin', ADMIN_USERNAME, hash);
   }
-  try { // prune legacy non-doctor accounts; drop their chat history first (FK constraint)
-    for (const u of db.prepare("SELECT id FROM users WHERE role NOT IN ('dentist','admin')").all()) {
+  try { // prune ONLY accounts with a role this build doesn't know; keep reception (staff)
+    // and patient (portal) accounts; drop their chat history first (FK constraint)
+    for (const u of db.prepare("SELECT id FROM users WHERE role NOT IN ('dentist','admin','reception','patient')").all()) {
       db.prepare('DELETE FROM conversations WHERE user_id=?').run(u.id); // messages cascade
       db.prepare('DELETE FROM users WHERE id=?').run(u.id);
     }
-  } catch (e) { console.warn('[dentera] non-doctor account cleanup skipped:', e.message); }
+  } catch (e) { console.warn('[dentera] legacy account cleanup skipped:', e.message); }
 }
+
+// v1.3 idempotent ops-seed — fills the NEW tables on an older DB (first boot already covers fresh installs).
+// Only empty tables are touched, so nothing is ever overwritten.
+function seedOps() {
+  try {
+    if (!db.prepare('SELECT COUNT(*) c FROM inventory_items').get().c) {
+      const ins = db.prepare('INSERT INTO inventory_items(name,unit,stock_qty,min_qty,unit_cost) VALUES (?,?,?,?,?)');
+      [['Composite resin syringe', 'pcs', 12, 4, 1800], ['Local anaesthetic cartridges', 'pcs', 40, 10, 60],
+       ['Nitrile gloves (box)', 'box', 9, 3, 320], ['Cotton rolls (pack)', 'pack', 24, 6, 90],
+       ['Impression material', 'pcs', 6, 2, 950], ['Prophy paste', 'pcs', 5, 2, 240]].forEach(r => ins.run(...r));
+    }
+    if (!db.prepare('SELECT COUNT(*) c FROM expenses').get().c && db.prepare('SELECT COUNT(*) c FROM invoices').get().c) {
+      const ins = db.prepare('INSERT INTO expenses(category,description,amount,spent_at) VALUES (?,?,?,?)');
+      ins.run('rent', 'Clinic rent — this month', 45000, localDay(-3));
+      ins.run('lab', 'Crown lab work (batch)', 8200, localDay(-6));
+      ins.run('material', 'Composite + consumables restock', 3100, localDay(-9));
+      ins.run('salary', 'Assistant salary', 18000, localDay(-12));
+    }
+    if (!db.prepare('SELECT COUNT(*) c FROM reminders').get().c) {
+      const rows = db.prepare(`SELECT a.id, a.patient_name, a.patient_phone, a.email, a.appointment_date
+        FROM appointments a WHERE a.status='scheduled' ORDER BY a.appointment_date LIMIT 2`).all();
+      const ins = db.prepare(`INSERT INTO reminders(appointment_id,patient_name,phone,email,channel,kind,message,send_at,status)
+        VALUES (?,?,?,?,?,?,?,?, 'pending')`);
+      for (const r of rows) ins.run(r.id, r.patient_name, r.patient_phone, r.email, r.email ? 'email' : 'sms', 'reminder_24h',
+        `Reminder: your DentEra visit is on ${r.appointment_date}. Reply or call the clinic to reschedule.`, localDay(0) + ' 18:00');
+    }
+  } catch (e) { console.warn('[dentera] ops seed skipped:', e.message); }
+}
+seedOps();
 
 // demo freshness: seeded demo appointments drift onto today/tomorrow at every boot (Era's trick)
 function redate() {

@@ -306,6 +306,13 @@ export default function EraStage({ me, onClose, greetOnOpen = false }) {
       loadConvos(true).catch(() => {
         setLog(messages => [...messages, { role: 'err', text: 'Conversation history could not be loaded. You can still ask Era a question.' }])
       })
+      // morning briefing: Era's own one-glance read of the day (v1.3)
+      api.post('/api/assistant/chat', { message: 'briefing' }).then(({ status, data }) => {
+        if (status === 200 && data.reply) {
+          setLog(l => [...l, { role: 'era', text: data.reply, badge: 'Day briefing' }])
+          if (voiceOn) speak(-1, data.reply)
+        }
+      }).catch(() => {})
     } else {
       loadConvos(false).catch(() => setLog([
         ...welcome(),

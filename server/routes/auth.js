@@ -50,8 +50,9 @@ router.post('/login', h((req, res, reqId) => {
   if (!isEmail && !isUsername) throw Object.assign(new Error('Please enter a valid email address or username.'), { status: 400, err: 'BAD_REQUEST' });
   if (password.length < 4) throw Object.assign(new Error('Please use a password with at least 4 characters.'), { status: 400, err: 'BAD_REQUEST' });
   const row = db.prepare('SELECT * FROM users WHERE email=?').get(identity);
-  // doctors + the admin only — unknown users, password-less rows and any other role are all rejected
-  if (!row || !row.password_hash || !['dentist', 'admin'].includes(row.role)) {
+  // doctors + admin + reception staff only — unknown users, password-less rows and
+  // patient (portal) accounts are all rejected here
+  if (!row || !row.password_hash || !['dentist', 'admin', 'reception'].includes(row.role)) {
     noteFail(req, identity);
     audit(row ? row.id : null, null, 'login_failed', null, reqId, false, null, 'auth', row ? row.id : null);
     throw Object.assign(new Error('Only registered doctors and the clinic admin can sign in to DentEra.'), { status: 401, err: 'BAD_CREDENTIALS' });

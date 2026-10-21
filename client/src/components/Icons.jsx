@@ -319,9 +319,64 @@ export const Menu = (p) => (
   </svg>
 )
 
+export const Moon = (p) => (
+  <svg {...base(p)}>
+    <path d="M20.4 14.6A8.6 8.6 0 0 1 9.4 3.6 8.8 8.8 0 1 0 20.4 14.6z" />
+  </svg>
+)
+
+export const Sun = (p) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="4.2" />
+    <path d="M12 2.2v2.3M12 19.5v2.3M2.2 12h2.3M19.5 12h2.3M5 5l1.6 1.6M17.4 17.4L19 19M19 5l-1.6 1.6M6.6 17.4L5 19" />
+  </svg>
+)
+
 export const Gear = (p) => (
   <svg {...base(p)}>
     <circle cx="12" cy="12" r="3.1" />
     <path d="M12 2.8l.9 2.6c.9.2 1.7.6 2.4 1.1l2.6-1 2 3.4-1.9 1.9a7.6 7.6 0 0 1 0 2.4l1.9 1.9-2 3.4-2.6-1c-.7.5-1.5.9-2.4 1.1L12 21.2l-.9-2.6a7.6 7.6 0 0 1-2.4-1.1l-2.6 1-2-3.4 1.9-1.9a7.6 7.6 0 0 1 0-2.4L4.1 8.9l2-3.4 2.6 1c.7-.5 1.5-.9 2.4-1.1L12 2.8z" />
+  </svg>
+)
+
+export const FileText = (p) => (
+  <svg {...base(p)}>
+    <path d="M6 2.8h7.6L19.2 8.4V20a1.2 1.2 0 0 1-1.2 1.2H6A1.2 1.2 0 0 1 4.8 20V4A1.2 1.2 0 0 1 6 2.8z" />
+    <path d="M13.4 2.9V8.3h5.6M8.2 12.4h7.6M8.2 15.7h7.6M8.2 18.9h4.6" />
+  </svg>
+)
+
+export const Box = (p) => (
+  <svg {...base(p)}>
+    <path d="M12 3.2l8.2 4.1v9.4L12 20.8 3.8 16.7V7.3L12 3.2z" />
+    <path d="M3.8 7.3L12 11.5l8.2-4.2M12 11.5v9.3" />
+  </svg>
+)
+
+export const Database = (p) => (
+  <svg {...base(p)}>
+    <ellipse cx="12" cy="6.1" rx="7.6" ry="3.1" />
+    <path d="M4.4 6.1v5.8c0 1.7 3.4 3.1 7.6 3.1s7.6-1.4 7.6-3.1V6.1M4.4 11.9v5.8c0 1.7 3.4 3.1 7.6 3.1s7.6-1.4 7.6-3.1v-5.8" />
+  </svg>
+)
+
+export const Pill = (p) => (
+  <svg {...base(p)}>
+    <rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4" transform="rotate(-38 12 12)" />
+    <path d="M9.4 15.4l5.2-5.6" />
+  </svg>
+)
+
+export const Camera = (p) => (
+  <svg {...base(p)}>
+    <path d="M4 8.6h3l1.6-2.4h6.8L17 8.6h3a1.2 1.2 0 0 1 1.2 1.2v8.4a1.2 1.2 0 0 1-1.2 1.2H4a1.2 1.2 0 0 1-1.2-1.2V9.8A1.2 1.2 0 0 1 4 8.6z" />
+    <circle cx="12" cy="13.9" r="3.6" />
+  </svg>
+)
+
+export const TrendingUp = (p) => (
+  <svg {...base(p)}>
+    <path d="M3.4 17.2l5.2-5.4 3.6 3.4 5.4-6.2" />
+    <path d="M14.6 8.4h4.2v4.2M18.8 8.4l-4.6 4.8" />
   </svg>
 )

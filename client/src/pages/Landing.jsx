@@ -28,6 +28,7 @@ export default function Landing() {
           <a href="#/why-choose">Why Choose</a>
           <a href="#/gallery">Gallery</a>
           <a href="#/blog">Blog</a>
+          <a href="#/portal">Patient portal</a>
         </nav>
         <a className="landing-cta" href="#/login">
           Get Started

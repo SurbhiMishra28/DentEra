@@ -4,9 +4,10 @@
 CREATE TABLE IF NOT EXISTS users(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN('dentist','admin','reception')),
+  role TEXT NOT NULL CHECK(role IN('dentist','admin','reception','patient')),
   email TEXT UNIQUE,
   password_hash TEXT,
+  patient_id INTEGER REFERENCES patients(id),  -- set only for role='patient' (portal login)
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -160,6 +161,148 @@ CREATE TABLE IF NOT EXISTS conversation_messages(
   tool TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- =====================================================================
+-- v1.3.0 additions (additive-only): payments, expenses, inventory,
+-- documents (X-rays), prescriptions, perio charting, reminders, notifications.
+-- =====================================================================
+
+-- money in: one row per payment against an invoice (receipt-grade history)
+CREATE TABLE IF NOT EXISTS payments(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoice_id INTEGER NOT NULL REFERENCES invoices(id),
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  amount INTEGER NOT NULL,
+  method TEXT NOT NULL DEFAULT 'cash' CHECK(method IN('cash','upi','card','bank','other')),
+  reference TEXT,
+  received_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- money out: practice running costs (rent, lab, salaries, material…)
+CREATE TABLE IF NOT EXISTS expenses(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL CHECK(category IN('rent','salary','lab','material','utility','marketing','equipment','other')),
+  description TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  spent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- consumables: clinical store stock with low-stock warnings
+CREATE TABLE IF NOT EXISTS inventory_items(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  unit TEXT NOT NULL DEFAULT 'pcs',
+  stock_qty INTEGER NOT NULL DEFAULT 0,
+  min_qty INTEGER NOT NULL DEFAULT 5,
+  unit_cost INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- every stock movement (+received, -consumed) keeps a reason
+CREATE TABLE IF NOT EXISTS inventory_moves(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id INTEGER NOT NULL REFERENCES inventory_items(id),
+  delta INTEGER NOT NULL,
+  reason TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- clinical files per patient (and optionally per tooth): X-rays, photos, reports
+CREATE TABLE IF NOT EXISTS documents(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  tooth_fdi TEXT,
+  kind TEXT NOT NULL DEFAULT 'other' CHECK(kind IN('xray','photo','report','consent','prescription','other')),
+  filename TEXT NOT NULL,
+  mime TEXT NOT NULL DEFAULT 'application/octet-stream',
+  bytes INTEGER NOT NULL DEFAULT 0,
+  stored_name TEXT NOT NULL,
+  uploaded_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- prescriptions: one header + medicine lines, printable (mirrors invoices)
+CREATE TABLE IF NOT EXISTS prescriptions(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  dentist_id INTEGER REFERENCES dentists(id),
+  appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
+  diagnosis TEXT,
+  advice TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS prescription_items(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  prescription_id INTEGER NOT NULL REFERENCES prescriptions(id) ON DELETE CASCADE,
+  medicine TEXT NOT NULL,
+  dose TEXT,
+  frequency TEXT,
+  days INTEGER
+);
+
+-- periodontal charting: 6 sites per tooth (pocket depth, bleeding, recession)
+CREATE TABLE IF NOT EXISTS perio_records(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  dentist_id INTEGER REFERENCES dentists(id),
+  tooth_fdi TEXT NOT NULL,
+  visit_date TEXT NOT NULL,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS perio_measurements(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  record_id INTEGER NOT NULL REFERENCES perio_records(id) ON DELETE CASCADE,
+  site INTEGER NOT NULL CHECK(site BETWEEN 1 AND 6),
+  pocket_depth INTEGER NOT NULL,
+  bleeding INTEGER NOT NULL DEFAULT 0,
+  recession INTEGER NOT NULL DEFAULT 0
+);
+
+-- appointment reminders (confirmation on public booking, 24h nudge, follow-ups)
+CREATE TABLE IF NOT EXISTS reminders(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  appointment_id INTEGER REFERENCES appointments(id) ON DELETE CASCADE,
+  patient_id INTEGER REFERENCES patients(id),
+  patient_name TEXT,
+  phone TEXT,
+  email TEXT,
+  channel TEXT NOT NULL DEFAULT 'sms' CHECK(channel IN('sms','email','whatsapp')),
+  kind TEXT NOT NULL CHECK(kind IN('confirmation','reminder_24h','followup','custom')),
+  message TEXT NOT NULL,
+  send_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN('pending','sent','failed','skipped')),
+  provider TEXT,
+  error TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  sent_at TEXT
+);
+
+-- in-app notifications (the bell + SSE stream)
+CREATE TABLE IF NOT EXISTS notifications(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  audience TEXT NOT NULL DEFAULT 'staff' CHECK(audience IN('staff','dentist','patient')),
+  user_id INTEGER REFERENCES users(id),
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT,
+  link TEXT,
+  read_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_pay_invoice ON payments(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_exp_spent ON expenses(spent_at);
+CREATE INDEX IF NOT EXISTS idx_docs_patient ON documents(patient_id);
+CREATE INDEX IF NOT EXISTS idx_rx_patient ON prescriptions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_perio_patient ON perio_records(patient_id, visit_date);
+CREATE INDEX IF NOT EXISTS idx_rem_due ON reminders(status, send_at);
+CREATE INDEX IF NOT EXISTS idx_notif_aud ON notifications(audience, read_at);
 
 CREATE INDEX IF NOT EXISTS idx_appt_dentist_date ON appointments(dentist_id, appointment_date);
 CREATE INDEX IF NOT EXISTS idx_dp_dentist ON dentist_patients(dentist_id);

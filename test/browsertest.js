@@ -113,6 +113,78 @@ async function main() {
     results.dashboard = r3.result?.result?.value;
     results.errors.push(...evs.filter(e => e.method === 'Log.entryAdded' && e.params.entry.level === 'error').map(e => e.params.entry.text));
 
+    // 3b) v1.3: WEEK VIEW + INSIGHTS sections behind the same session
+    const rWeek = await cmd('Runtime.evaluate', {
+      returnByValue: true, awaitPromise: true, expression:
+        `(async () => {
+           const btn = [...document.querySelectorAll('.dashboard-nav button')].find(b => /Week view/i.test(b.textContent));
+           btn && btn.click();
+           await new Promise(r => setTimeout(r, 900));
+           const week = { cols: document.querySelectorAll('.weekcol').length, cards: document.querySelectorAll('.weekcard').length };
+           const ins = [...document.querySelectorAll('.dashboard-nav button')].find(b => /Insights/i.test(b.textContent));
+           ins && ins.click();
+           await new Promise(r => setTimeout(r, 900));
+           return JSON.stringify({ week, svg: !!document.querySelector('.trendsvg'), navCount: document.querySelectorAll('.dashboard-nav button').length });
+         })()`
+    });
+    results.weekAndInsights = rWeek.result?.result?.value;
+
+    // 3c) v1.3: dark mode toggle flips data-theme and persists
+    const rDark = await cmd('Runtime.evaluate', {
+      returnByValue: true, expression: `(() => {
+        const btn = [...document.querySelectorAll('button')].find(b => /Dark|Light/.test(b.textContent));
+        const before = document.documentElement.dataset.theme;
+        btn && btn.click();
+        const after = document.documentElement.dataset.theme;
+        return JSON.stringify({ before, after, saved: localStorage.getItem('dentera_theme') });
+      })()`
+    });
+    results.darkMode = rDark.result?.result?.value;
+
+    // 3d) v1.3: notification bell opens (its data comes from /api/notifications)
+    const rBell = await cmd('Runtime.evaluate', {
+      returnByValue: true, awaitPromise: true, expression:
+        `(async () => {
+           const bell = document.querySelector('.bellbtn');
+           bell && bell.click();
+           await new Promise(r => setTimeout(r, 500));
+           return JSON.stringify({ opened: !!document.querySelector('.bellpop'), rows: document.querySelectorAll('.bellpop li').length });
+         })()`
+    });
+    results.notifications = rBell.result?.result?.value;
+
+    // 4) v1.3: PATIENT PORTAL — phone + date of birth (no password).
+    // React controls these inputs: set the value through the native setter so onChange fires.
+    evs = await go(BASE + '/#/portal', 3000);
+    const r4 = await cmd('Runtime.evaluate', {
+      returnByValue: true, awaitPromise: true, expression:
+        `(async () => {
+           const setVal = (el, v) => {
+             const proto = Object.getPrototypeOf(el);
+             const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+             desc.set.call(el, v);
+             el.dispatchEvent(new Event('input', { bubbles: true }));
+           };
+           const phone = document.querySelector('input[type="tel"]');
+           if (!phone) return JSON.stringify({ error: 'no portal sign-in form' });
+           setVal(phone, '9810022222');
+           const dob = document.querySelector('input[type="date"]');
+           if (dob) setVal(dob, '1992-09-30');
+           const form = document.querySelector('.portallogin form');
+           form && form.requestSubmit();
+           await new Promise(r => setTimeout(r, 2500));
+           const txt = document.body.innerText || '';
+           return JSON.stringify({
+             signedIn: /Welcome back/i.test(txt),
+             navTabs: [...document.querySelectorAll('.portalnav button')].map(b => b.textContent.trim()),
+             stillForm: !!document.querySelector('.portallogin form'),
+             errText: (document.querySelector('.portallogin .err') || {}).textContent || null
+           });
+         })()`
+    });
+    results.portal = r4.result?.result?.value;
+    results.errors.push(...evs.filter(e => e.method === 'Log.entryAdded' && e.params.entry.level === 'error').map(e => e.params.entry.text));
+
     console.log(JSON.stringify(results, null, 2));
     ws.close();
   } finally { child.kill(); }

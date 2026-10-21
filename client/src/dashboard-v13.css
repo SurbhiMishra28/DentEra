@@ -1,0 +1,100 @@
+
+/* =====================================================================
+   v1.3 additions — week view (drag to move), insights charts, the
+   notification bell, UPI card and inline payment form.
+   Kept in its own file so the original sheet stays untouched.
+   ===================================================================== */
+
+/* ---- notification bell ---- */
+.bellwrap { position: relative; display: inline-flex; }
+.bellbtn { position: relative; min-height: 40px; }
+.belldot {
+  position: absolute; top: -6px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px;
+  border-radius: 999px; background: #ef4444; color: #fff; font-size: .62rem; font-weight: 800;
+  display: grid; place-items: center; box-shadow: 0 2px 6px rgba(239, 68, 68, .4);
+}
+.bellpop {
+  position: absolute; top: calc(100% + .5rem); right: 0; z-index: 60; width: min(370px, 92vw);
+  max-height: 420px; overflow: auto; background: #fff; border: 1px solid var(--line);
+  border-radius: var(--r-md); box-shadow: var(--shadow-lg); padding: .8rem;
+}
+.bellpop__head { display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--line); padding-bottom: .55rem; margin-bottom: .4rem; }
+.bellpop__time { font-size: .68rem; margin-left: .4rem; }
+.bellpop li { display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  padding: .55rem .3rem; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 10px; }
+.bellpop li:last-child { border-bottom: 0 }
+.bellpop li.is-unread { background: var(--mint-soft); }
+.bellpop li .apptbody { min-width: 0 }
+.bellpop li b { display: block; font-size: .85rem }
+.bellpop li .muted { font-size: .75rem }
+
+/* ---- week view ---- */
+.weekgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .6rem; }
+.weekcol {
+  min-height: 190px; display: flex; flex-direction: column; gap: .4rem; padding: .55rem;
+  background: #f7fcfa; border: 1.5px solid var(--line); border-radius: 14px;
+}
+.weekcol.is-today { border-color: var(--mint); background: #eefaf7; }
+.weekcol__head { display: flex; align-items: baseline; gap: .35rem; color: var(--ink); }
+.weekcol__head b { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+.weekcol__head small { color: var(--mut); font-size: .75rem; font-weight: 800; }
+.weekcol__count { margin-left: auto; font-size: .68rem; font-weight: 800; color: var(--mint2);
+  background: var(--mint-soft); border-radius: 999px; padding: .05rem .45rem; }
+.weekcol__empty { color: var(--mut); font-size: .72rem; font-style: italic; }
+.weekcard {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem; cursor: grab;
+  background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--mint);
+  border-radius: 10px; padding: .4rem .5rem; font-size: .74rem; box-shadow: var(--shadow-sm);
+}
+.weekcard b { font-size: .74rem; }
+.weekcard .muted { font-size: .72rem; }
+.weekcard.st-completed { border-left-color: #22c55e; }
+.weekcard.st-no_show { border-left-color: #f59e0b; }
+.weekcard.st-cancelled { border-left-color: #ef4444; opacity: .65; }
+.weekcard:active { cursor: grabbing; }
+@media (max-width: 860px) { .weekgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .weekgrid { grid-template-columns: 1fr; } }
+
+/* ---- insights trend chart ---- */
+.trendsvg { width: 100%; height: 130px; }
+.trendsvg__label { font-size: 9px; fill: #5b7a74; font-weight: 700; }
+[data-theme="dark"] .trendsvg__label { fill: #9dbcbf; }
+.trendlegend { display: flex; gap: 1rem; flex-wrap: wrap; margin: -.2rem 0 .8rem; }
+.trendlegend span { display: inline-flex; align-items: center; gap: .4rem; font-size: .74rem; color: var(--mut); }
+.trendlegend i { width: 12px; height: 12px; border-radius: 4px; background: var(--grad); }
+.trendlegend i.dot { border-radius: 50%; background: var(--mint); }
+
+/* ---- UPI card + inline payment form ---- */
+.upicard { display: grid; gap: .7rem; background: var(--bg-secondary); }
+.upicard .upilink {
+  display: block; padding: .6rem .8rem; background: #fff; border: 1px dashed var(--mint);
+  border-radius: 12px; font-size: .78rem; color: var(--mint2); overflow-wrap: anywhere;
+}
+[data-theme="dark"] .upicard .upilink { background: #0e2831; }
+.upicard .rowgap { display: flex; gap: .5rem; flex-wrap: wrap; }
+.payform { margin-top: .7rem; display: grid; gap: .8rem; background: var(--bg-secondary); }
+.payform .rowgap { display: flex; gap: .5rem; flex-wrap: wrap; }
+.payform .grid3 { align-items: end; }
+
+/* keep bill rows readable with the new inline form */
+.invrow { flex-wrap: wrap; row-gap: .5rem; }
+
+/* ---- clinical record tabs (perio / files / prescriptions) ---- */
+.tabs { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tabs button { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .95rem; border-radius: 999px;
+  background: var(--card); border: 1.5px solid var(--line); color: var(--mut); font-weight: 700; font-size: .84rem; }
+.tabs button.is-active { background: var(--grad); color: #fff; border-color: transparent; }
+.tabpanel { display: grid; gap: 1rem; }
+.tabpanel h3 { margin: 0; }
+.perio-pick { display: inline-flex; align-items: center; gap: .5rem; font-size: .82rem; font-weight: 700; }
+.perio-pick input { width: 68px; text-align: center; font-weight: 800; }
+.periogrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .6rem; }
+.periocell { display: grid; gap: .35rem; padding: .6rem; background: var(--bg-secondary);
+  border: 1px solid var(--line); border-radius: 12px; text-align: center; }
+.periocell > span { font-size: .68rem; font-weight: 800; letter-spacing: .06em; color: var(--mut); }
+.periocell input[type="number"] { text-align: center; font-weight: 800; padding: .45rem .3rem; }
+.periocheck { display: inline-flex; align-items: center; gap: .3rem; font-size: .68rem; color: var(--mut); cursor: pointer; }
+.periocheck input { width: 14px; height: 14px; }
+@media (max-width: 720px) { .periogrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .periogrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

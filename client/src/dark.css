@@ -1,0 +1,213 @@
+/* dark.css — dark mode overrides. Applied by data-theme="dark" on <html> (see theme.js).
+   Re-declares the design tokens first (everything else reads them), then overrides the
+   handful of hard-coded light surfaces in dashboard/admin detail CSS. */
+:root[data-theme="dark"] {
+  --bg: #0b1f26;
+  --ink: #e6f4f2;
+  --mut: #9dbcbf;
+  --card: #123039ee;
+  --err: #ff8f85;
+  --ok: #6ee7cf;
+  --line: #1d4551;
+  --mint: #2fd3bd;
+  --mint2: #23a695;
+  --mint-soft: #123c40;
+  --bg-secondary: #102b33;
+  --bg-card: var(--card);
+  --color-white: #123039;
+  --color-ink: var(--ink);
+  --color-muted: var(--mut);
+  --color-mint: var(--mint);
+  --color-mint-dark: var(--mint2);
+  --color-mint-light: var(--mint-soft);
+  --color-amber: #f2b95e;
+  --color-amber-light: #3a2f16;
+  --color-error: var(--err);
+  --color-error-light: #3d1f1d;
+  --color-info: #7cc7f5;
+  --color-info-light: #14304a;
+  --color-success: #6ee7cf;
+  --color-success-light: #10352e;
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, .3);
+  --shadow-md: 0 12px 40px rgba(0, 0, 0, .45);
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, .5);
+}
+
+:root[data-theme="dark"] body {
+  color: var(--ink);
+  background:
+    radial-gradient(1100px 600px at 88% -10%, #14313b 0%, transparent 55%),
+    radial-gradient(900px 620px at -12% 32%, #0e2c34 0%, transparent 55%),
+    linear-gradient(160deg, #0a1e25, #071319);
+}
+
+/* structural surfaces */
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .ref-card,
+:root[data-theme="dark"] .stat,
+:root[data-theme="dark"] .toothpanel,
+:root[data-theme="dark"] .dash-book,
+:root[data-theme="dark"] .rowForm {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+:root[data-theme="dark"] .dashboard-page {
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 95% 0%, rgba(23, 90, 104, 0.35), transparent 34%),
+    linear-gradient(180deg, #0a2028 0%, #0b1f26 100%);
+}
+
+:root[data-theme="dark"] .dashboard-sidebar,
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .dashboard-toolbar,
+:root[data-theme="dark"] .portallogin,
+:root[data-theme="dark"] .bellpop {
+  background: #0f2a33e6;
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .dashboard-toolbar .mini,
+:root[data-theme="dark"] .dashboard-toolbar a.mini,
+:root[data-theme="dark"] .mini {
+  background: #14333c;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .dashboard-brand,
+:root[data-theme="dark"] .dashboard-brand:hover,
+:root[data-theme="dark"] .dashboard-toolbar .who {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .dashboard-nav button {
+  color: var(--mut);
+}
+:root[data-theme="dark"] .dashboard-nav button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--mint), var(--mint2));
+}
+
+/* text + lists */
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .empty,
+:root[data-theme="dark"] .statlabel,
+:root[data-theme="dark"] .stat-foot,
+:root[data-theme="dark"] .panel-eyebrow,
+:root[data-theme="dark"] .ref-next-note,
+:root[data-theme="dark"] .tiny {
+  color: var(--mut);
+}
+
+:root[data-theme="dark"] .appt,
+:root[data-theme="dark"] .ptrow,
+:root[data-theme="dark"] .invrow,
+:root[data-theme="dark"] .list li,
+:root[data-theme="dark"] .bellpop li {
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .timechip,
+:root[data-theme="dark"] .chip {
+  background: #14333c;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .stchip {
+  background: #14333c;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+/* forms */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: #0e2831;
+  border-color: var(--line);
+  color: var(--ink);
+}
+:root[data-theme="dark"] input::placeholder { color: #6f9296 }
+
+:root[data-theme="dark"] .tablewrap .tbl th {
+  color: var(--mut);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .tablewrap .tbl td {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .seg,
+:root[data-theme="dark"] .seg__btn {
+  background: #0e2831;
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .tooth {
+  border-color: #1d4551;
+  color: var(--ink);
+}
+
+/* week view + bell (new in v1.3) */
+:root[data-theme="dark"] .weekcol {
+  background: var(--card);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .weekcol.is-today { border-color: var(--mint) }
+:root[data-theme="dark"] .weekcard {
+  background: #14333c;
+  border-color: var(--line);
+  color: var(--ink);
+}
+:root[data-theme="dark"] .weekcard.is-dragging { opacity: .4 }
+:root[data-theme="dark"] .weekcol.is-over { background: #17393f }
+
+:root[data-theme="dark"] .bellpop__head { border-color: var(--line) }
+:root[data-theme="dark"] .bellpop li.is-unread { background: #14333c }
+:root[data-theme="dark"] .belldot { background: var(--err); color: #fff }
+
+:root[data-theme="dark"] .dash-book__banner,
+:root[data-theme="dark"] .dash-book__sec {
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .slotchip,
+:root[data-theme="dark"] .daychip,
+:root[data-theme="dark"] .durchip,
+:root[data-theme="dark"] .reasonchip {
+  background: #0e2831;
+  border-color: var(--line);
+  color: var(--ink);
+}
+:root[data-theme="dark"] .slotchip.is-on,
+:root[data-theme="dark"] .daychip.is-on,
+:root[data-theme="dark"] .durchip.is-on,
+:root[data-theme="dark"] .reasonchip.is-on { background: var(--grad); color: #fff }
+:root[data-theme="dark"] .dash-scrim { background: rgba(0, 0, 0, .5) }
+
+/* charts read from CSS vars — the donut/bars stay legible on dark */
+:root[data-theme="dark"] .ref-bar-track,
+:root[data-theme="dark"] .ref-status-track { background: #17393f }
+
+/* landing + booking pages keep their own art; only the text surfaces flip */
+:root[data-theme="dark"] .bookview,
+:root[data-theme="dark"] .medcard {
+  color: var(--ink);
+}
+:root[data-theme="dark"] .medcard {
+  background: var(--card);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .medinput {
+  background: #0e2831;
+  border-color: var(--line);
+  color: var(--ink);
+}
+:root[data-theme="dark"] .medlabel { color: var(--mut) }
+:root[data-theme="dark"] .medth,
+:root[data-theme="dark"] .medq { color: var(--ink) }
+:root[data-theme="dark"] .footnote { color: var(--mut) }

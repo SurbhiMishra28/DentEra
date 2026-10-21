@@ -17,8 +17,13 @@ const ORIGINS = String(process.env.CORS_ORIGIN || 'http://localhost:5173,http://
   .split(',').map(s => s.trim());
 
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || ORIGINS.includes(origin)), credentials: true }));
+// document uploads carry base64 data (≤6 MB) — a dedicated, larger JSON parser for that path only
+app.use('/api/documents', express.json({ limit: '8mb' }));
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
+// clinic-wide throttle + cookie-session CSRF guard (both cheap, no new dependencies)
+app.use(require('./middleware/rateLimit').limiter);
+app.use(require('./middleware/csrf').csrfGuard);
 
 // tiny request id for audit + error echoes
 app.use((req, res, next) => { req.requestId = require('crypto').randomBytes(6).toString('hex'); next(); });
@@ -30,12 +35,17 @@ app.get('/api/health', (req, res) => {
     users: db.prepare('SELECT COUNT(*) c FROM users').get().c });
 });
 
-// ORDER MATTERS: public + assistant + admin routers are mounted BEFORE resources, because resources.js
-// has a router-level requireAuth guard that would otherwise 401 every public/assistant call.
+// ORDER MATTERS: public + portal + assistant + admin routers are mounted BEFORE resources, because
+// resources.js has a router-level requireAuth guard that would otherwise 401 every public/portal call.
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api', require('./routes/publicBooking'));
+app.use('/api', require('./routes/portal'));
 app.use('/api', require('./routes/assistant'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api', require('./routes/clinical'));
+app.use('/api', require('./routes/money'));
+app.use('/api', require('./routes/insights'));
+app.use('/api', require('./routes/staff'));
 app.use('/api', require('./routes/resources'));
 
 // unknown API path → JSON 404 (never the SPA)
@@ -59,6 +69,12 @@ app.use((e, req, res, next) => {
 
 if (require.main === module) {
   app.listen(PORT, () => console.log(`[dentera] listening on http://localhost:${PORT}`));
+  // v1.3 background jobs (both no-op until their first tick; unref'd so tests can exit)
+  const reminders = require('./services/reminders');
+  reminders.generate();                       // plan reminders for visits in the next 24h
+  setInterval(async () => { try { reminders.generate(); await reminders.runDue({}); } catch (e) { console.warn('[dentera] reminder tick failed:', e.message); } },
+    5 * 60 * 1000).unref();
+  require('./services/backup').startSchedule(); // daily snapshot, newest 7 kept
 }
 
 module.exports = { app }; // tests import this

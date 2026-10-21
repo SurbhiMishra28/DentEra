@@ -59,6 +59,7 @@ export default function Login({ onDone }) {
           <span>DentEra</span>
         </a>
         <nav className="login-header-links" aria-label="Sign-in navigation">
+          <a className="login-home" href="#/portal">Patient portal</a>
           <a className="login-home" href="#/">Back to home</a>
         </nav>
       </header>
@@ -110,7 +111,8 @@ export default function Login({ onDone }) {
             </div>
           </div>
 
-          <p className="login-privacy">Only the clinic's registered doctors and admin have accounts here.</p>
+          <p className="login-privacy">Only the clinic's registered doctors and admin have accounts here.
+            Patients sign in with their phone number in the <a href="#/portal">patient portal</a>.</p>
         </div>
       </section>
     </main>

@@ -1,6 +1,6 @@
 # DentEra — Rules
 
-**Version:** 1.1.0 · **Date:** 2026-10-06
+**Version:** 1.3.0 · **Date:** 2026-10-21
 Inherits Era's [../Rules.md](../Rules.md) discipline. These rules are NON-NEGOTIABLE for `dental/`.
 
 ## 1. Security rules
@@ -25,6 +25,10 @@ Inherits Era's [../Rules.md](../Rules.md) discipline. These rules are NON-NEGOTI
 
 1. **npm allowed (stack change, v1.1.0)** — server: Express + better-sqlite3 + bcryptjs + jsonwebtoken + cookie-parser + cors; client: Vite + React + React Router. Keep the list short and purposeful — no UI kits, no ORM.
 2. **Additive migrations only** — new tables/columns are added, existing data is never destroyed or reshaped.
+   The ONE exception ever taken (v1.3, `users`): a CHECK constraint had to widen for the `reception`/`patient`
+   roles, so the table is rebuilt once (guarded by a schema check, ids and hashes preserved).
+3. **Uploads never sit in the web root** — files land in `server/uploads/` and stream through an
+   authenticated route; no static path ever exposes a patient file.
 3. **One owner per concern** — schema `server/db/schema.sql`, identity `server/middleware/auth.js`, SQL
    `server/services/tools.js`, understanding `server/services/brain.js`, voice `server/services/tts.js`,
    HTTP `server/routes/*.js`, UI `client/src/`. `dental/` never imports Era's `../lib/` or `../db/`.

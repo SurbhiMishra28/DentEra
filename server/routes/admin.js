@@ -9,6 +9,10 @@ const { db, localDay } = require('../db/connection');
 const { requireAuth, requireRole, httpErr } = require('../middleware/auth');
 const { h } = require('../middleware/helpers');
 const { audit } = require('../services/audit');
+const analytics = require('../services/analytics');
+const reminders = require('../services/reminders');
+const backup = require('../services/backup');
+const money = require('../services/money');
 
 const router = express.Router();
 
@@ -111,6 +115,41 @@ router.post('/dentists', h((req, res, reqId) => {
   res.status(201).json({ ok: true, data: { id: did, user_id: uid, name, email } });
 }));
 
+// ---------- staff (reception) accounts (v1.3) — admin only ----------
+router.get('/staff', h((req, res, reqId) => {
+  const rows = db.prepare(`SELECT id,name,email,created_at FROM users
+    WHERE role='reception' ORDER BY id`).all();
+  audit(req.auth.sub, null, 'list', 'admin_staff', reqId, true, null, 'admin', null);
+  res.json({ ok: true, data: rows });
+}));
+
+router.post('/staff', h((req, res, reqId) => {
+  if (req.auth.role !== 'admin') throw httpErr(403, 'FORBIDDEN', 'Only the clinic admin can add staff.');
+  const b = req.body || {};
+  const name = String(b.name || '').trim().slice(0, 120);
+  const email = String(b.email || '').toLowerCase().trim();
+  const password = String(b.password || '');
+  if (!name) throw httpErr(400, 'BAD_REQUEST', 'A staff name is required.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw httpErr(400, 'BAD_REQUEST', 'Please enter a valid email address.');
+  if (password.length < 6) throw httpErr(400, 'BAD_REQUEST', 'Please use a password with at least 6 characters.');
+  if (db.prepare('SELECT id FROM users WHERE email=?').get(email))
+    throw httpErr(409, 'EMAIL_TAKEN', 'That email already has an account.');
+  const uid = db.prepare('INSERT INTO users(name,role,email,password_hash) VALUES (?,?,?,?)')
+    .run(name, 'reception', email, bcrypt.hashSync(password, 10)).lastInsertRowid;
+  audit(req.auth.sub, null, 'create', 'admin_staff', reqId, true, name + ' <' + email + '>', 'admin', uid);
+  res.status(201).json({ ok: true, data: { id: uid, name, email, role: 'reception' } });
+}));
+
+router.delete('/staff/:id', h((req, res, reqId) => {
+  if (req.auth.role !== 'admin') throw httpErr(403, 'FORBIDDEN', 'Only the clinic admin can remove staff.');
+  const row = db.prepare("SELECT id,name FROM users WHERE id=? AND role='reception'").get(+req.params.id);
+  if (!row) throw httpErr(404, 'NOT_FOUND', 'No such staff account.');
+  db.prepare('DELETE FROM conversations WHERE user_id=?').run(row.id);
+  db.prepare('DELETE FROM users WHERE id=?').run(row.id);
+  audit(req.auth.sub, null, 'delete', 'admin_staff', reqId, true, row.name, 'admin', row.id);
+  res.json({ ok: true });
+}));
+
 // ---------- invoice print payload (receipt: invoice + patient + plan items) ----------
 router.get('/invoices/:id', h((req, res, reqId) => {
   const inv = db.prepare('SELECT * FROM invoices WHERE id=?').get(+req.params.id);
@@ -129,6 +168,98 @@ router.get('/invoices/:id', h((req, res, reqId) => {
   const due = Math.max(0, (inv.amount || 0) - (inv.discount || 0) - (inv.paid_amount || 0));
   audit(req.auth.sub, null, 'get', 'admin_invoice_print', reqId, true, null, 'admin', inv.id);
   res.json({ ok: true, data: { invoice: inv, patient, plan: planRow, items, dentist, due } });
+}));
+
+// ---------- analytics (clinic-wide, v1.3) ----------
+const win = q => ({ from: q.from, to: q.to });
+const clinicUser = req => ({ role: 'admin', dentistId: null, sub: req.auth.sub });
+
+router.get('/analytics/summary', h((req, res, reqId) => {
+  const out = analytics.summary(clinicUser(req), win(req.query));
+  audit(req.auth.sub, null, 'list', 'admin_analytics_summary', reqId, true, null, 'admin', null);
+  res.json({ ok: true, data: out });
+}));
+
+router.get('/analytics/trend', h((req, res) => {
+  res.json({ ok: true, data: analytics.trend(clinicUser(req), win(req.query)) });
+}));
+
+router.get('/analytics/top-treatments', h((req, res) => {
+  res.json({ ok: true, data: analytics.topTreatments(clinicUser(req), win(req.query)) });
+}));
+
+router.get('/analytics/utilization', h((req, res) => {
+  res.json({ ok: true, data: analytics.utilization(clinicUser(req), win(req.query)) });
+}));
+
+// ---------- recall list (v1.3): patients due for a check-up ----------
+router.get('/recall', h((req, res, reqId) => {
+  const out = analytics.recall(clinicUser(req), { months: req.query.months });
+  audit(req.auth.sub, null, 'list', 'admin_recall', reqId, true, null, 'admin', null);
+  res.json({ ok: true, data: out });
+}));
+
+// ---------- reminders (v1.3) ----------
+router.get('/reminders', h((req, res) => {
+  res.json({ ok: true, data: reminders.list({ status: req.query.status }) });
+}));
+
+router.post('/reminders/run', h(async (req, res, reqId) => {
+  const created = reminders.generate();
+  const out = await reminders.runDue({});
+  audit(req.auth.sub, null, 'create', 'reminders', reqId, true, `${created.length} planned, ${out.sent} sent`, 'admin', null);
+  res.json({ ok: true, data: { ...out, planned: created.length, provider: reminders.PROVIDER } });
+}));
+
+router.post('/reminders', h((req, res, reqId) => {
+  const out = reminders.create(req.auth, req.body || {});
+  audit(req.auth.sub, null, 'create', 'reminders', reqId, true, null, 'admin', out.id);
+  res.status(201).json({ ok: true, data: out });
+}));
+
+router.patch('/reminders/:id', h((req, res, reqId) => {
+  const changes = reminders.setStatus(+req.params.id, (req.body || {}).status);
+  audit(req.auth.sub, null, 'update', 'reminders', reqId, !!changes, null, 'admin', +req.params.id);
+  if (!changes) throw httpErr(404, 'NOT_FOUND', 'No such reminder.');
+  res.json({ ok: true });
+}));
+
+// ---------- backups (v1.3) ----------
+router.get('/backups', h((req, res) => {
+  res.json({ ok: true, data: backup.backups() });
+}));
+
+router.post('/backups', h(async (req, res, reqId) => {
+  const out = await backup.create('manual');
+  audit(req.auth.sub, null, 'create', 'backups', reqId, true, out.name, 'admin', null);
+  res.status(201).json({ ok: true, data: out });
+}));
+
+// ---------- profit & loss + expenses (clinic-wide, v1.3) ----------
+router.get('/finance/pnl', h((req, res, reqId) => {
+  const out = money.pnl({ from: req.query.from, to: req.query.to });
+  audit(req.auth.sub, null, 'list', 'admin_finance_pnl', reqId, true, null, 'admin', null);
+  res.json({ ok: true, data: out });
+}));
+
+router.get('/inventory', h((req, res) => {
+  res.json({ ok: true, data: money.listInventory() });
+}));
+
+router.post('/inventory', h((req, res, reqId) => {
+  const out = money.addInventoryItem(req.auth, req.body || {});
+  audit(req.auth.sub, null, 'create', 'admin_inventory_items', reqId, true, out.name, 'admin', out.id);
+  res.status(201).json({ ok: true, data: out });
+}));
+
+router.post('/inventory/:id/move', h((req, res, reqId) => {
+  const out = money.moveInventory(req.auth, { item_id: +req.params.id, ...(req.body || {}) });
+  audit(req.auth.sub, null, 'update', 'admin_inventory_items', reqId, true, String(out.stock_qty), 'admin', out.id);
+  res.json({ ok: true, data: out });
+}));
+
+router.get('/inventory/:id/moves', h((req, res) => {
+  res.json({ ok: true, data: money.inventoryMoves(+req.params.id) });
 }));
 
 module.exports = router;

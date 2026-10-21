@@ -25,7 +25,22 @@ const DENTISTS = [
   { id: 2, name: 'Dr. Arjun Shah', spec: 'Orthodontics' }
 ]
 
+// triage (v1.3): "what brings you in?" — sets the visit reason and the slot length the
+// clinic should reserve, so a 45-minute RCT is not booked into a 30-minute gap.
+const CONCERNS = [
+  ['checkup', 'Check-up / cleaning', 'Consultation', 30],
+  ['pain', 'Tooth pain or sensitivity', 'Tooth pain / sensitivity', 30],
+  ['cavity', 'Cavity / filling', 'Composite filling', 30],
+  ['rct', 'Root canal (RCT)', 'Root canal treatment', 45],
+  ['gums', 'Bleeding gums / swelling', 'Gum treatment / scaling', 30],
+  ['braces', 'Braces or aligners', 'Braces consultation', 30],
+  ['whitening', 'Whitening / cosmetic', 'Teeth whitening', 60],
+  ['wisdom', 'Wisdom tooth trouble', 'Wisdom tooth consultation', 45],
+  ['kid', 'Child (first visit)', 'Paediatric consultation', 30],
+]
+
 export default function PublicBooking() {
+  const [concern, setConcern] = useState('')
   const [dentistId, setDentistId] = useState(1)
   const [date, setDate] = useState(firstOpenDay())
   const [slot, setSlot] = useState('') // '' = earliest available
@@ -88,7 +103,8 @@ export default function PublicBooking() {
       yn('cough') && `Cough: ${yn('cough')}`,
       yn('discharged') && `Hospital last 14 days: ${yn('discharged')}`
     ].filter(Boolean)
-    const reason = ['Website request', ...bits].join(' — ').slice(0, 200)
+    const picked = CONCERNS.find(c => c[0] === concern)
+    const reason = [picked ? picked[2] : 'Website request', ...bits].join(' — ').slice(0, 200)
     const { status, data } = await api.post('/api/public/booking', {
       dentist_id: dentistId, date, time, name, phone, email, address, reason
     })
@@ -153,6 +169,17 @@ export default function PublicBooking() {
                   {DENTISTS.map(d => <option key={d.id} value={d.id}>{d.name} — {d.spec}</option>)}
                 </select>
               </label>
+
+              <label className="medblock full">
+                <span className="medlabel">What brings you in? <small>(helps the clinic reserve the right time)</small></span>
+                <select className="medinput" value={concern} onChange={e => setConcern(e.target.value)} aria-label="What brings you in">
+                  <option value="">Not sure / something else</option>
+                  {CONCERNS.map(c => <option key={c[0]} value={c[0]}>{c[1]} · about {c[3]} min</option>)}
+                </select>
+              </label>
+              {concern === 'braces' && dentistId !== 2 && (
+                <p className="medhint full" role="status">For braces and aligners, Dr. Arjun Shah (orthodontist) is the specialist — you can switch above.</p>
+              )}
 
               <div className="medblock full" role="group" aria-label="Do you have any of the below?">
                 <span className="medlabel">Do you have any of the below:</span>

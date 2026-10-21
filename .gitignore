@@ -11,3 +11,6 @@ nvcf.key
 certs/
 *.log
 dc.txt
+server/uploads/
+server/db/backups/
+test/uploads/

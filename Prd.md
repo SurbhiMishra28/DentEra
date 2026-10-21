@@ -1,6 +1,6 @@
 # DentEra — Dental Care for Doctors · PRD
 
-**Version:** 1.1.0 · **Date:** 2026-10-06 · **Status:** Planning (no code yet)
+**Version:** 1.3.0 · **Date:** 2026-10-21 · **Status:** Shipped (v1.3.0 — see Task.md)
 **Parent project:** [../Prd.md](../Prd.md) (Era v4.5 general clinic assistant — this is a SEPARATE sub-project in `dental/`)
 
 ## 1. Product in one line
@@ -51,11 +51,13 @@ stack as Era.
 
 ## 6. Non-goals (v1)
 
-- ❌ Patient login/portal — patients book as guests; portal is Phase 2
-- ❌ Payments gateway (UPI/card) — invoices record manual payments only
-- ❌ X-ray/image uploads — text records only in v1
+Shipped since v1.1 — **patient portal** (phone + dob sign-in), **UPI links + recorded payments with
+history**, and **X-ray/report uploads** all landed in v1.3.0 (Features.md F16–F21). Still out of scope:
+
+- ❌ Hosted payment capture (card gateway with payouts) — the clinic records cash/UPI payments and UPI links are generated locally
 - ❌ Multi-clinic chains — one clinic per deployment
 - ❌ Real LLM — assistant is the deterministic Era-style engine (predictability in a medical context)
+- ❌ Durable production database — SQLite + daily backups; Postgres is the documented next step (README → "Data durability")
 
 ## 7. Success criteria
 
