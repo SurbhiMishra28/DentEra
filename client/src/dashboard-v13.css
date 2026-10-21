@@ -82,7 +82,7 @@
 
 /* ---- clinical record tabs (perio / files / prescriptions) ---- */
 .tabs { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: 1rem; }
-.tabs button { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .95rem; border-radius: 999px;
+.tabs button { display: inline-flex; align-items: center; gap: .4rem; min-height: 40px; padding: .5rem .95rem; border-radius: 999px;
   background: var(--card); border: 1.5px solid var(--line); color: var(--mut); font-weight: 700; font-size: .84rem; }
 .tabs button.is-active { background: var(--grad); color: #fff; border-color: transparent; }
 .tabpanel { display: grid; gap: 1rem; }
@@ -98,3 +98,68 @@
 .periocheck input { width: 14px; height: 14px; }
 @media (max-width: 720px) { .periogrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .periogrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* =====================================================================
+   v1.3.1 — dashboard mobile-friendliness (≤600px phone pass)
+   ===================================================================== */
+
+/* stats: two-up grid instead of a very tall single column.
+   The :not() selector matches dashboard.css's own ≤860px rule (same specificity,
+   later in the cascade → this one wins). */
+@media (max-width: 600px) {
+  .dashboard-page .ref-stats:not(.ref-stats--2),
+  .dashboard-page .ref-stats.ref-stats--4,
+  .dashboard-page .ref-stats.ref-stats--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .dashboard-page .ref-stats .stat {
+    flex-direction: column; align-items: flex-start; gap: 0.5rem;
+    padding: 0.85rem 0.9rem; border-radius: 16px;
+    /* desktop gives the last card the full row (3+1); a 2×2 phone grid wants even cells */
+    grid-column: auto;
+  }
+  .dashboard-page .ref-stats .stat-icon { width: 38px; height: 38px; }
+  .dashboard-page .ref-stats .statnum { font-size: 1.6rem; }
+  .dashboard-page .ref-stats .statlabel,
+  .dashboard-page .statlabel { font-size: 0.7rem; }
+  .dashboard-page .ref-stats .stat-foot,
+  .dashboard-page .stat-foot { font-size: 0.78rem; }
+  .dashboard-page .dashboard-eyebrow,
+  .dashboard-eyebrow { font-size: 0.7rem; }
+
+  /* comfortable tap targets everywhere */
+  .dashboard-page .mini,
+  .dashboard-toolbar .mini,
+  .dashboard-toolbar a.mini { min-height: 40px; font-size: 0.78rem; padding: 0 0.7rem; }
+  .dashboard-page .apptlist .mini,
+  .dashboard-page .invrow .mini,
+  .dashboard-page .list .mini { min-height: 38px; }
+  .dashboard-page .chev { min-width: 44px; min-height: 44px; display: grid; place-items: center; margin: -12px; }
+  .dash-burger { min-width: 44px; min-height: 44px; }
+
+  /* toolbar keeps the essentials; secondary links drop their text (icon-only) */
+  .dashboard-toolbar { row-gap: 0.45rem; padding: 0.5rem 0.6rem; }
+  .dashboard-page .ref-topbar-title,
+  .dashboard-toolbar .ref-topbar-title { font-size: 1.05rem; }
+  .hide-sm { display: none; }
+
+  /* booking studio stacks */
+  .dash-fields { grid-template-columns: minmax(0, 1fr) !important; }
+  .dash-book { padding: 0.9rem; }
+  .dash-book__banner { flex-direction: column; align-items: flex-start; }
+  .rowForm .grid3 { grid-template-columns: minmax(0, 1fr); }
+
+  /* appointment rows wrap their actions instead of squeezing */
+  .apptlist li.appt { flex-wrap: wrap; }
+  .apptlist li.appt .rowgap { width: 100%; }
+  .invrow { flex-direction: column; align-items: flex-start; }
+  .invrow .rowgap { width: 100%; }
+
+  /* week view: a comfortable two-column grid */
+  .weekgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .weekcol { min-height: 150px; }
+
+  /* perio grid stays usable */
+  .periogrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

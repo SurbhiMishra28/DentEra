@@ -332,6 +332,21 @@ export const Sun = (p) => (
   </svg>
 )
 
+export const Eye = (p) => (
+  <svg {...base(p)}>
+    <path d="M2.4 12S5.9 5.8 12 5.8 21.6 12 21.6 12 18.1 18.2 12 18.2 2.4 12 2.4 12z" />
+    <circle cx="12" cy="12" r="3.1" />
+  </svg>
+)
+
+export const EyeOff = (p) => (
+  <svg {...base(p)}>
+    <path d="M4.2 4.2l15.6 15.6" />
+    <path d="M9.6 5.9A9.2 9.2 0 0 1 12 5.6c6.1 0 9.6 6.4 9.6 6.4a17 17 0 0 1-3.1 4l-3-3M6.4 7.9A17 17 0 0 0 2.4 12S5.9 18.4 12 18.4a9.4 9.4 0 0 0 3.3-.6" />
+    <path d="M9.9 9.9a3.1 3.1 0 0 0 4.2 4.2" />
+  </svg>
+)
+
 export const Gear = (p) => (
   <svg {...base(p)}>
     <circle cx="12" cy="12" r="3.1" />

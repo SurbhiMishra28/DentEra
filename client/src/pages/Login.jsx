@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { api } from '../api.js'
 import DentEraMark from '../components/DentEraMark.jsx'
-import { Check } from '../components/Icons.jsx'
+import { Check, Tooth, ChevronRight, Eye, EyeOff } from '../components/Icons.jsx'
 import '../login.css'
 
 const homeFor = u => (u && u.role === 'admin' ? '#/admin' : '#/dashboard')
@@ -9,6 +9,7 @@ const homeFor = u => (u && u.role === 'admin' ? '#/admin' : '#/dashboard')
 export default function Login({ onDone }) {
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPw, setShowPw] = useState(false)
 
   async function submit(e) {
     e.preventDefault()
@@ -82,10 +83,26 @@ export default function Login({ onDone }) {
             <label htmlFor="login-email">Email or username</label>
             <input id="login-email" name="email" type="text" placeholder="you@dental.local or admin" autoComplete="username" required />
             <label htmlFor="login-password">Password</label>
-            <input id="login-password" name="password" type="password" placeholder="At least 4 characters" autoComplete="current-password" minLength={4} required />
+            <span className="pwfield">
+              <input id="login-password" name="password" type={showPw ? 'text' : 'password'} placeholder="At least 4 characters" autoComplete="current-password" minLength={4} required />
+              <button type="button" className="pwtoggle" aria-pressed={showPw}
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+                title={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw(v => !v)}>
+                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </span>
             <button disabled={busy} type="submit">{busy ? 'Please wait…' : 'Sign in'}</button>
           </form>
           <p className="authmsg" role="status" aria-live="polite">{msg}</p>
+
+          <a className="portalcta" href="#/portal">
+            <span className="portalcta__icon" aria-hidden="true"><Tooth size={20} /></span>
+            <span className="portalcta__body">
+              <b>I'm a patient</b>
+              <small>See your visits, bills and tooth records — sign in with your phone number, no password.</small>
+            </span>
+            <span className="portalcta__go" aria-hidden="true"><ChevronRight size={16} /></span>
+          </a>
 
           <div className="demobox">
             <span className="demolabel">Or explore a demo clinic — pick a doctor</span>

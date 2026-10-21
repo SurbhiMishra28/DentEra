@@ -156,6 +156,10 @@ async function main() {
     // 4) v1.3: PATIENT PORTAL — phone + date of birth (no password).
     // React controls these inputs: set the value through the native setter so onChange fires.
     evs = await go(BASE + '/#/portal', 3000);
+    const portalBefore = await cmd('Runtime.evaluate', {
+      returnByValue: true, expression: `JSON.stringify({ form: !!document.querySelector('.portallogin form') })`
+    });
+    results.portalBefore = portalBefore.result?.result?.value;
     const r4 = await cmd('Runtime.evaluate', {
       returnByValue: true, awaitPromise: true, expression:
         `(async () => {
@@ -183,6 +187,48 @@ async function main() {
          })()`
     });
     results.portal = r4.result?.result?.value;
+    results.errors.push(...evs.filter(e => e.method === 'Log.entryAdded' && e.params.entry.level === 'error').map(e => e.params.entry.text));
+
+    // 5) v1.3.1 MOBILE (390×844): login page + dashboard must fit without sideways scroll.
+    // Sign out first (the portal session would otherwise route /#/login to the Dashboard).
+    // Navigations must leave the page (hash-only changes don't re-run the SPA bootstrap).
+    await cmd('Network.clearBrowserCookies');
+    await cmd('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+    await go('about:blank', 400);
+    evs = await go(BASE + '/#/login', 2800);
+    const rLoginM = await cmd('Runtime.evaluate', {
+      returnByValue: true, expression: `JSON.stringify({
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        hasPatientCta: !!document.querySelector('.portalcta'),
+        hasPwToggle: !!document.querySelector('.pwtoggle'),
+        form: !!document.querySelector('#loginF'),
+        hash: location.hash,
+        text: (document.body.innerText || '').slice(0, 100)
+      })`
+    });
+    results.loginMobile = rLoginM.result?.result?.value;
+
+    // sign back in for the mobile dashboard pass (the login check cleared the cookie)
+    const again = await (await fetch(BASE + '/api/auth/demo-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ who: 'dentistA' })
+    })).json();
+    await cmd('Network.setCookie', { name: 'dent_token', value: again.token, url: BASE });
+    await go('about:blank', 400);
+    evs = await go(BASE + '/#/dashboard', 2800);
+    const rDashM = await cmd('Runtime.evaluate', {
+      returnByValue: true, expression: `(() => {
+        const stats = [...document.querySelectorAll('.ref-stats .stat')].map(s => Math.round(s.getBoundingClientRect().width));
+        return JSON.stringify({
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          statWidths: stats,
+          evenStats: stats.length ? new Set(stats).size === 1 : null,
+          hasBurger: !!document.querySelector('.dash-burger'),
+          bellPresent: !!document.querySelector('.bellbtn'),
+          themeBtn: !!document.querySelector('.themebtn')
+        });
+      })()`
+    });
+    results.dashboardMobile = rDashM.result?.result?.value;
     results.errors.push(...evs.filter(e => e.method === 'Log.entryAdded' && e.params.entry.level === 'error').map(e => e.params.entry.text));
 
     console.log(JSON.stringify(results, null, 2));

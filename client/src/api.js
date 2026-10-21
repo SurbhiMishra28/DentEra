@@ -8,7 +8,7 @@ async function call(path, opts = {}) {
   });
   let data = {};
   try { data = await res.json(); } catch {}
-  if (res.status === 401 && path !== '/api/auth/me' &&
+  if (res.status === 401 && path !== '/api/auth/me' && !path.startsWith('/api/portal') &&
       !location.hash.startsWith('#/login') && !path.startsWith('/api/auth/login')) {
     location.hash = '#/login';
   }

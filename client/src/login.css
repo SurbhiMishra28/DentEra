@@ -721,3 +721,56 @@
 @media (max-width: 480px) {
   .demo-personas { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* =====================================================================
+   v1.3.1 — friendlier sign-in + mobile tap targets
+   ===================================================================== */
+
+/* password visibility toggle */
+.pwfield { position: relative; display: block; }
+.pwfield input { padding-right: 3rem; }
+.pwtoggle {
+  position: absolute; top: 50%; right: .35rem; transform: translateY(-50%);
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border-radius: 12px; background: transparent; color: #5b7a74; padding: 0;
+  box-shadow: none;
+}
+.pwtoggle:hover { background: #eef7f6; filter: none; transform: translateY(-50%); }
+
+/* patient CTA card */
+.portalcta {
+  display: flex; align-items: center; gap: .85rem; margin: .4rem 0 1.4rem;
+  padding: .85rem 1rem; border: 1.5px solid #bfe6e2; border-radius: 18px;
+  background: linear-gradient(135deg, #e6f7f5, #f3fbfa);
+  color: var(--ink); text-align: left; text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.portalcta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(15, 124, 146, .16); text-decoration: none; }
+.portalcta__icon { flex: 0 0 auto; width: 42px; height: 42px; display: grid; place-items: center;
+  border-radius: 13px; background: var(--grad); color: #fff; }
+.portalcta__body { flex: 1 1 auto; min-width: 0; }
+.portalcta__body b { display: block; font-size: .95rem; }
+.portalcta__body small { display: block; margin-top: .1rem; font-size: .78rem; color: #4d6c76; line-height: 1.45; }
+.portalcta__go { flex: 0 0 auto; color: var(--mint2); }
+
+/* every header link gets a real 44px tap target (mobile-friendliness) */
+.login-header-links a {
+  min-height: 44px; display: inline-flex; align-items: center; padding: 0 .3rem;
+}
+.portalcta { min-height: 44px; }
+
+@media (max-width: 800px) {
+  .loginform #loginF input { min-height: 54px; font-size: 1rem; }
+  .loginform #loginF button[type="submit"] { min-height: 54px; font-size: 1rem; }
+  .pwfield input { padding-right: 3.2rem; }
+  .demo-persona { min-height: 68px; }
+  .portalcta__body small { font-size: .8rem; }
+}
+
+@media (max-width: 480px) {
+  .login-header { padding: .6rem .9rem; }
+  .login-header-links a { font-size: .82rem; }
+  .loginform { padding: 1.2rem 1.1rem; }
+  .loginform #loginF input { min-height: 52px; }
+  .portalcta { padding: .8rem .9rem; gap: .7rem; }
+}

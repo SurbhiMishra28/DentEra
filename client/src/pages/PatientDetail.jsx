@@ -3,6 +3,8 @@ import { api } from '../api.js'
 import ToothChart from '../components/ToothChart.jsx'
 import { AlertTriangle, MessageCircle, FileText, Pill, Droplet, Plus, Check, XMark } from '../components/Icons.jsx'
 import { printRx } from '../utils/printRx.js'
+import '../dashboard.css'
+import '../dashboard-v13.css'
 
 export default function PatientDetail({ me, id, onChat }) {
   const [chart, setChart] = useState(null)

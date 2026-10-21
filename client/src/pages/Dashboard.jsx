@@ -7,7 +7,7 @@ import TrendChart from '../components/TrendChart.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
   Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
-  ClipboardList, Stethoscope, LogOut, Menu, Calendar, BarChart, Phone,
+  ClipboardList, Stethoscope, LogOut, Menu, Calendar, BarChart, Phone, Globe, Tooth,
 } from '../components/Icons.jsx'
 import '../dashboard.css'
 import '../dashboard-v13.css'
@@ -330,9 +330,9 @@ export default function Dashboard({ me, onChat, onLogout }) {
         <span className="spacer" />
         <ThemeToggle />
         <Notifications />
-        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin"><Shield size={14} /> Admin panel</a>}
-        <a className="mini" href="#/book">Public booking</a>
-        <a className="mini" href="#/portal">Patient portal</a>
+        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
+        <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
+        <a className="mini" href="#/portal" title="Patient portal" aria-label="Patient portal"><Tooth size={14} /><span className="hide-sm">Patient portal</span></a>
         {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
       </div>
 

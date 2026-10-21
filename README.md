@@ -32,7 +32,8 @@ The default store is SQLite (`server/db/dental.db`). A snapshot is taken every 2
 
 ```sh
 npm test      # 37 server checks (supertest, scratch DB)
-node test/browsertest.js   # browser E2E: landing, login, dashboard, week view, insights, dark mode, bell, portal
+node test/browsertest.js   # browser E2E: landing, login, dashboard, week view, insights, dark mode, bell, portal, mobile (390px)
+node test/responsive-check.js "http://localhost:8100/#/dashboard" 390 844   # mobile audit: overflow, tiny text, tap targets + screenshot
 ```
 
 ## Deploy to Render

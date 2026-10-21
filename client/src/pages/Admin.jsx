@@ -357,9 +357,9 @@ export default function Admin({ me, onLogout }) {
           <span className="spacer" />
           <ThemeToggle />
           <Notifications />
-          <a className="mini" href="#/dashboard"><Stethoscope size={14} /> Doctor dashboard</a>
-          <a className="mini" href="#/book"><Globe size={14} /> Public booking</a>
-          <a className="mini" href="#/portal">Patient portal</a>
+          <a className="mini" href="#/dashboard" title="Doctor dashboard" aria-label="Doctor dashboard"><Stethoscope size={14} /><span className="hide-sm">Doctor dashboard</span></a>
+          <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
+          <a className="mini" href="#/portal" title="Patient portal" aria-label="Patient portal"><Tooth size={14} /><span className="hide-sm">Patient portal</span></a>
           <button className="mini" onClick={() => window.location.reload()}><RotateCcw size={14} /> Refresh</button>
         </div>
 
