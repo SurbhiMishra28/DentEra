@@ -4,7 +4,7 @@ import DentEraMark from '../components/DentEraMark.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
   Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
-  ClipboardList, Stethoscope, LogOut, Menu, Globe,
+  ClipboardList, Stethoscope, LogOut, Globe, Menu, Bell, ChevronDown,
 } from '../components/Icons.jsx'
 import '../dashboard.css'
 
@@ -25,8 +25,25 @@ const dayNum = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); i
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
 const initial = n => (n || '?').replace(/^Dr\.?\s*/i, '').trim()[0]?.toUpperCase() || '?'
 const money = n => '₹' + Number(n || 0).toLocaleString('en-IN')
+// "known for" copy the profile sheet shows under the doctor's photo
+const FAMOUS_FOR = {
+  'General Dentistry': 'a gentle chair-side manner, painless fillings and thorough check-ups — the dentist whole families come back to.',
+  'Orthodontics': 'braces and clear-aligner plans that straighten smiles comfortably, with reviews that fit school and work schedules.',
+  'Cosmetic Dentistry': 'natural-looking smile makeovers — bonding, whitening and veneers that still look like you.',
+  'Endodontics': 'calm, precise root canals — most patients are surprised it is already over.',
+  'Periodontics': 'gum care that stops bleeding and keeps teeth firmly in place for the long run.',
+  'Oral Surgery': 'smooth, well-predicted extractions and implants with journeys that heal fast.',
+  'Paediatric Dentistry': 'making little ones actually look forward to the dentist — gentle, playful care that stops cavities early.',
+  'Prosthodontics': 'crowns, bridges and dentures that fit and look natural from the first trial.',
+}
+const famousFor = specialty => FAMOUS_FOR[specialty] || 'honest advice and gentle treatment — every appointment starts on time.'
+
 // stock portrait for the signed-in doctor's profile photo
 const doctorPhoto = id => `/doctor-${((((id || 1) - 1) % 8) + 8) % 8 + 1}.jpg`
+
+// the phone breakpoint the dashboard CSS drawer / bottom-nav rules key off.
+// Kept as one constant so JS and CSS can never drift apart again.
+const PHONE_BP = '(max-width: 900px)'
 
 const STATUS_ORDER = ['scheduled', 'completed', 'no_show', 'cancelled']
 const STATUS_META = {
@@ -51,6 +68,25 @@ export default function Dashboard({ me, onChat, onLogout }) {
   const [msg, setMsg] = useState('')
   const [activeSection, setActiveSection] = useState('overview')
   const [sideOpen, setSideOpen] = useState(false) // mobile: off-canvas sidebar drawer
+  const [profileOpen, setProfileOpen] = useState(false) // profile sheet: doctor photo + about
+  const [sideCollapsed, setSideCollapsed] = useState(false) // desktop: sidebar collapsed to give the panel room
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia(PHONE_BP).matches)
+
+  // the burger opens the drawer on phones, collapses the sidebar on desktop
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_BP)
+    const onChange = e => { setNarrow(e.matches); if (!e.matches) setSideOpen(false) }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  // Escape closes the drawer / profile sheet — phones have no reliable "click outside" affordance
+  useEffect(() => {
+    if (!sideOpen && !profileOpen) return
+    const onKey = e => { if (e.key === 'Escape') { setSideOpen(false); setProfileOpen(false) } }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [sideOpen, profileOpen])
 
   // booking studio state
   const [bookOpen, setBookOpen] = useState(false)
@@ -137,6 +173,22 @@ export default function Dashboard({ me, onChat, onLogout }) {
     if (bookOpen) return setBookOpen(false)
     setBookErr(''); setBook(b => ({ ...b, date })); setBookOpen(true)
   }
+  function toggleSide() {
+    if (narrow) setSideOpen(o => !o)
+    else setSideCollapsed(c => !c)
+  }
+  // the bell in the toolbar is a shortcut to the schedule list — it makes sure the
+  // appointments panel is the active section, then scrolls it into view.
+  function jumpToSchedule() {
+    setActiveSection(a => (a === 'overview' || a === 'appointments') ? a : 'appointments')
+    setSideOpen(false)
+    requestAnimationFrame(() => document.getElementById('appointments')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  // the button only lights up in its non-default state: drawer open on phones, sidebar collapsed on desktop
+  const sideBusy = narrow ? sideOpen : sideCollapsed
+  const sideExpanded = narrow ? sideOpen : !sideCollapsed
   function toggleAdd() {
     if (addOpen) return setAddOpen(false)
     setMsg(''); setAddOpen(true)
@@ -217,20 +269,20 @@ export default function Dashboard({ me, onChat, onLogout }) {
   const walkInMode = !book.patient_id
 
   return (
-    <div className="view dashboard-page">
+    <div className={'view dashboard-page' + (sideCollapsed ? ' is-collapsed' : '')}>
       <aside className={'dashboard-sidebar' + (sideOpen ? ' is-open' : '')} aria-label="Clinic navigation">
         <a className="brand dashboard-brand" href="#/" aria-label="DentEra home">
           <span className="brand-mark"><DentEraMark /></span>
           <span>DentEra<small>CLINIC WORKSPACE</small></span>
         </a>
 
-        <div className="ref-profile">
+        <button type="button" className="ref-profile" onClick={() => setProfileOpen(true)} aria-haspopup="dialog" aria-label={`Open profile — ${me.name}`}>
           <span className="ref-profile-avatar is-photo">
             <img src={doctorPhoto(me.id)} alt="" />
           </span>
           <b>{me.name}</b>
           <small>{me.role === 'dentist' ? (me.specialty || 'Dentist') : (me.role || 'Staff')}</small>
-        </div>
+        </button>
 
         <nav className="dashboard-nav" aria-label="Dashboard sections">
           <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => { setActiveSection('overview'); setSideOpen(false) }}><span aria-hidden="true"><Home size={17} /></span>Overview</button>
@@ -245,9 +297,18 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
       <main className="dashboard-main" id="overview">
       <div className="topbar dashboard-toolbar">
-        <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)} aria-expanded={sideOpen}><Menu size={20} /></button>
-        <h1 className="ref-topbar-title">DentEra</h1>
+        <button type="button" className={"dash-burger" + (sideBusy ? " is-active" : "")} aria-label={narrow ? (sideOpen ? "Close navigation menu" : "Open navigation menu") : (sideCollapsed ? "Show sidebar" : "Hide sidebar")} onClick={toggleSide} aria-expanded={sideExpanded}>
+          <Menu size={22} />
+        </button>
+        <a className="dash-toolbar-brand" href="#/" aria-label="DentEra home">
+          <span className="brand-mark"><DentEraMark /></span>
+          <h1 className="ref-topbar-title">DentEra</h1>
+        </a>
         <span className="spacer" />
+        <button type="button" className="dash-iconbtn dash-iconbtn--bell" onClick={jumpToSchedule} aria-label={`Today's schedule — ${appts.length} appointment${appts.length === 1 ? '' : 's'}`} title="Today's schedule">
+          <Bell size={18} />
+          {appts.length > 0 && <span className="dash-iconbtn__badge" aria-hidden="true">{appts.length > 9 ? '9+' : appts.length}</span>}
+        </button>
         {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
         <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
         {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
@@ -275,6 +336,9 @@ export default function Dashboard({ me, onChat, onLogout }) {
               <span className="statlabel">{date === today() ? "TODAY'S APPOINTMENTS" : 'APPOINTMENTS'}</span>
               <span className="statnum">{String(appts.length).padStart(2, '0')}</span>
               <span className="stat-foot">{prettyDate(date)}</span>
+              {statusCounts.scheduled > 0
+                ? <span className="stat-trend stat-trend--info"><span className="stat-trend__arrow" aria-hidden="true">↑</span>{statusCounts.scheduled} still to see</span>
+                : <span className="stat-trend stat-trend--flat">{appts.length ? 'day wrapped up' : 'nothing booked yet'}</span>}
             </div>
           </div>
           <div className="stat stat--mint">
@@ -283,6 +347,9 @@ export default function Dashboard({ me, onChat, onLogout }) {
               <span className="statlabel">{date === today() ? 'COMPLETED TODAY' : 'COMPLETED'}</span>
               <span className="statnum">{String(doneToday).padStart(2, '0')}</span>
               <span className="stat-foot">{appts.length ? `of ${appts.length} booked` : 'nothing booked yet'}</span>
+              {statusCounts.no_show > 0
+                ? <span className="stat-trend stat-trend--down"><span className="stat-trend__arrow" aria-hidden="true">↓</span>{statusCounts.no_show} no-show{statusCounts.no_show === 1 ? '' : 's'}</span>
+                : <span className="stat-trend stat-trend--up"><span className="stat-trend__arrow" aria-hidden="true">↑</span>kept on schedule</span>}
             </div>
           </div>
           <div className="stat stat--teal">
@@ -291,7 +358,34 @@ export default function Dashboard({ me, onChat, onLogout }) {
               <span className="statlabel">TOTAL PATIENTS</span>
               <span className="statnum">{patientTotal}+</span>
               <span className="stat-foot">in your register</span>
+              {invoices.length > 0
+                ? <span className="stat-trend stat-trend--down"><span className="stat-trend__arrow" aria-hidden="true">↓</span>{money(due)} outstanding</span>
+                : <span className="stat-trend stat-trend--up"><span className="stat-trend__arrow" aria-hidden="true">↑</span>all invoices settled</span>}
             </div>
+          </div>
+        </div>
+
+        {/* clinic at a glance — four compact tiles that reflow 4 → 2 → 1 */}
+        <div className="ref-glance dashboard-glance">
+          <div>
+            <small>APPOINTMENTS TODAY</small>
+            <b>{appts.length}</b>
+            <span className="muted">{statusCounts.scheduled} still scheduled</span>
+          </div>
+          <div>
+            <small>COMPLETED</small>
+            <b>{doneToday}</b>
+            <span className="muted">of {appts.length} booked</span>
+          </div>
+          <div>
+            <small>REGISTERED PATIENTS</small>
+            <b>{patientTotal}</b>
+            <span className="muted">searchable by name or phone</span>
+          </div>
+          <div>
+            <small>UNPAID INVOICES</small>
+            <b>{money(due)}</b>
+            <span className="muted">{invoices.length} to follow up</span>
           </div>
         </div>
 
@@ -580,7 +674,32 @@ export default function Dashboard({ me, onChat, onLogout }) {
           <IndianRupee size={18} />
           <span>Billing</span>
         </button>
+        <button type="button" className={'dash-bottomnav__btn dash-bottomnav__btn--profile' + (profileOpen ? ' is-on' : '')} onClick={() => setProfileOpen(o => !o)} aria-expanded={profileOpen} aria-haspopup="dialog" aria-label={profileOpen ? 'Close profile' : 'Open profile'}>
+          <span className="dash-bottomnav__avatar" aria-hidden="true"><img src={doctorPhoto(me.id)} alt="" /></span>
+          <span>Profile</span>
+        </button>
       </nav>
+
+      {/* profile sheet — doctor photo + what they're known for; opens from the
+          bottom-nav Profile button (phones) or the sidebar profile card (desktop) */}
+      {profileOpen && <>
+        <div className="dash-scrim dash-scrim--profile" onClick={() => setProfileOpen(false)} aria-hidden="true" />
+        <section className="dash-profile" role="dialog" aria-label={`Profile — ${me.name}`}>
+          <button type="button" className="dash-profile__close" onClick={() => setProfileOpen(false)} aria-label="Close profile">
+            <XMark size={16} />
+          </button>
+          <img className="dash-profile__photo" src={doctorPhoto(me.id)} alt={`Photo of ${me.name}`} />
+          <h3>{me.name}</h3>
+          <small className="dash-profile__meta">{me.role === 'dentist' ? 'Dentist' : 'Clinic admin'}</small>
+          <span className="dash-profile__chip">{me.specialty || 'Dental care'}</span>
+          <p className="dash-profile__about">
+            <b>Known for:</b> {famousFor(me.specialty)}
+          </p>
+          <button type="button" className="ref-signout" onClick={() => { setProfileOpen(false); logout() }}>
+            <LogOut size={16} /> Sign out
+          </button>
+        </section>
+      </>}
     </div>
   )
 }

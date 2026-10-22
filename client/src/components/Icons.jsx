@@ -321,7 +321,8 @@ export const Bell = (p) => (
 
 export const Menu = (p) => (
   <svg {...base(p)}>
-    <path d="M4 7h16M4 12h16M4 17h10" />
+    {/* two-line hamburger — matches the reference topbar icon */}
+    <path d="M4 8.5h16M4 15.5h13" />
   </svg>
 )
 

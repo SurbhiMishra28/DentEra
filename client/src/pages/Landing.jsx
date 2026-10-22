@@ -1,10 +1,10 @@
-﻿import React, { useState } from "react"
+﻿import React, { useEffect, useState } from "react"
 import "../landing.css"
 import Reveal from "../components/Reveal.jsx"
 import DentEraMark from "../components/DentEraMark.jsx"
 import EraStage from "../components/EraStage.jsx"
 import {
-  Tooth, Trophy, MapPin, Phone, Mail, ChevronDown, Menu, XMark,
+  Tooth, Trophy, MapPin, Phone, Mail, ChevronDown, Menu,
 } from "../components/Icons.jsx"
 import { SERVICES, DOCTORS, TESTIMONIALS, WHY_CHOOSE, GALLERY_IMAGES, TRUST_BADGES, BLOG_POSTS } from "../data/landingData.js"
 
@@ -14,18 +14,43 @@ export default function Landing() {
   const [showAllDoctors, setShowAllDoctors] = useState(false)
   const [openPost, setOpenPost] = useState(null)
   const [navOpen, setNavOpen] = useState(false)
+  const [navCollapsed, setNavCollapsed] = useState(false)
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 980px)').matches)
+
+  // the hamburger opens the dropdown panel on phones, collapses the inline nav on desktop
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 980px)')
+    const onChange = e => setNarrow(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  function toggleNav() {
+    if (narrow) setNavOpen(o => !o)
+    else setNavCollapsed(c => !c)
+  }
 
   const visibleDoctors = showAllDoctors ? DOCTORS : DOCTORS.slice(0, 4)
+
+  // the button only lights up in its non-default state: panel open on phones, nav collapsed on desktop
+  const navBusy = narrow ? navOpen : navCollapsed
+  const navExpanded = narrow ? navOpen : !navCollapsed
 
   return (
     <div className="landing" id="top">
       {/* Navigation */}
       <header className="topbar landing-bar">
-        <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark"><DentEraMark /></span> DentEra</a>
-        <button type="button" className="landing-nav-toggle" aria-label={navOpen ? "Close menu" : "Open menu"} aria-expanded={navOpen} onClick={() => setNavOpen(o => !o)}>
-          {navOpen ? <XMark size={20} /> : <Menu size={20} />}
+        <button
+          type="button"
+          className={"landing-nav-toggle" + (navBusy ? " is-active" : "")}
+          aria-label={narrow ? (navOpen ? "Close menu" : "Open menu") : (navCollapsed ? "Show menu" : "Hide menu")}
+          aria-expanded={navExpanded}
+          onClick={toggleNav}
+        >
+          <Menu size={22} />
         </button>
-        <nav className={"landing-nav" + (navOpen ? " is-open" : "")} aria-label="Main navigation">
+        <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark"><DentEraMark /></span> DentEra</a>
+        <nav className={"landing-nav" + (navOpen ? " is-open" : "") + (navCollapsed ? " is-collapsed" : "")} aria-label="Main navigation">
           <a href="#/" onClick={() => setNavOpen(false)}>Home</a>
           <a href="#/about" onClick={() => setNavOpen(false)}>About</a>
           <a href="#/services" onClick={() => setNavOpen(false)}>Services</a>
