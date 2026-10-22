@@ -3,6 +3,7 @@ import "../landing.css"
 import Reveal from "../components/Reveal.jsx"
 import DentEraMark from "../components/DentEraMark.jsx"
 import EraStage from "../components/EraStage.jsx"
+import InstallButton from "../components/InstallButton.jsx"
 import {
   Tooth, Trophy, MapPin, Phone, Mail, ChevronDown, Menu,
 } from "../components/Icons.jsx"
@@ -64,6 +65,7 @@ export default function Landing() {
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </a>
+        <InstallButton label="Install app" />
       </header>
 
       {/* Hero Section */}

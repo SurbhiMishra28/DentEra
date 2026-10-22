@@ -7,6 +7,7 @@ import {
   ShieldCheck, UserRound, Check, BarChart,
 } from "../components/Icons.jsx"
 import StatusDonut, { STATUS_ORDER, STATUS_META } from "../components/StatusDonut.jsx"
+import InstallButton from "../components/InstallButton.jsx"
 import { downloadCSV, todayStamp } from "../utils/csv.js"
 import { printReceipt } from "../utils/receipt.js"
 import "../dashboard.css"
@@ -219,6 +220,7 @@ export default function Admin({ me, onLogout }) {
           <a className="mini" href="#/dashboard"><Stethoscope size={14} /> Doctor dashboard</a>
           <a className="mini" href="#/book"><Globe size={14} /> Public booking</a>
           <button className="mini" onClick={() => window.location.reload()}><RotateCcw size={14} /> Refresh</button>
+          <InstallButton className="mini" label="Install app" />
         </div>
 
         <div className="pagehead">

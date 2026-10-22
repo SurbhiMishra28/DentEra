@@ -10,6 +10,7 @@ import Admin from './pages/Admin.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import EraStage from './components/EraStage.jsx'
+import InstallPrompt from './components/InstallPrompt.jsx'
 
 export default function App() {
   const [route, setRoute] = useState(() => location.hash.startsWith('#/') ? location.hash : '#/')
@@ -63,6 +64,7 @@ export default function App() {
     <div className="shell">
       <ErrorBoundary>{page}</ErrorBoundary>
       {me && chatOpen && <EraStage me={me} greetOnOpen={greetEra} onClose={() => { setChatOpen(false); setGreetEra(false) }} />}
+      <InstallPrompt />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import DentEraMark from '../components/DentEraMark.jsx'
+import InstallButton from '../components/InstallButton.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
   Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
@@ -311,6 +312,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </button>
         {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
         <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
+        <InstallButton className="mini" label="Install app" />
         {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
       </div>
 

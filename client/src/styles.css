@@ -444,3 +444,22 @@ a.mini.primary{background:var(--grad);color:#fff}
 .stat--error { border-left: 4px solid var(--color-error); }
 .stat--info { border-left: 4px solid var(--color-info); }
 .stat--success { border-left: 4px solid var(--color-success); }
+
+/* ---- PWA install (floating card + toolbar pills) — sits above the Era fab, never over the drawer ---- */
+.pwa-install-card{position:fixed;right:22px;bottom:86px;z-index:54;display:flex;gap:.75rem;align-items:center;
+  width:min(430px,calc(100vw - 28px));background:#fffffff7;backdrop-filter:blur(14px);border:1px solid #ffffffb0;
+  border-radius:20px;box-shadow:var(--shadow-lg);padding:.85rem 1rem;text-align:left;animation:pop .25s ease-out}
+.pwa-install-card__mark{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:var(--grad);color:#fff}
+.pwa-install-card__mark .dentera-mark{width:70%;height:70%}
+.pwa-install-card__body{flex:1;min-width:0}
+.pwa-install-card__body strong{font-size:.9rem}
+.pwa-install-card__body p{margin:.2rem 0 0;color:var(--mut);font-size:.78rem;line-height:1.45}
+.pwa-install-card__actions{flex:0 0 auto;display:flex;flex-direction:column;gap:.25rem;align-items:stretch}
+.pwa-install-card__install{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;background:var(--grad);color:#fff;font-size:.8rem;padding:.5rem .95rem}
+.pwa-install-card__later{background:none;color:var(--mut);font-size:.74rem;font-weight:600;padding:.22rem .4rem;box-shadow:none}
+.pwa-install-card__later:hover{color:var(--err);text-decoration:underline;transform:none}
+/* install pill reuses the global .mini button style these rules just make its label responsive on screens that never load dashboard.css */
+.mini span.hide-sm{display:inline}
+@media(max-width:640px){.mini span.hide-sm{display:none}}
+@media(max-width:560px){.pwa-install-card{right:14px;bottom:78px}}
+

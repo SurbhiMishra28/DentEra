@@ -347,3 +347,10 @@ export const EyeOff = (p) => (
     <path d="M9.9 9.9a3.1 3.1 0 0 0 4.2 4.2" />
   </svg>
 )
+
+export const Download = (p) => (
+  <svg {...base(p)}>
+    <path d="M12 3.4v11.2M12 14.6l-4-4M12 14.6l4-4" />
+    <path d="M4 16.8v2.4a1.4 1.4 0 0 0 1.4 1.4h13.2a1.4 1.4 0 0 0 1.4-1.4v-2.4" />
+  </svg>
+)
