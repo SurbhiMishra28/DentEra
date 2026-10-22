@@ -692,33 +692,40 @@
   }
 
   .dashboard-sidebar {
-    position: static;
-    height: auto;
-    min-height: 0;
-    gap: 0.8rem;
-    margin-bottom: 1rem;
-    padding: 0.8rem;
-    border-radius: 18px;
+    position: fixed;
+    top:0;left:0;bottom:0;
+    height:100dvh;
+    min-height:0;
+    width:min(300px,88vw);
+    transform:translateX(-110%);
+    transition:transform .25s ease;
+    z-index:950;
+    margin-bottom:0;
+    border-radius:0 18px 18px 0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
+  .dashboard-sidebar.is-open{transform:none}
+  .dash-scrim{position:fixed;inset:0;background:rgba(12,30,40,0.5);backdrop-filter:blur(2px);z-index:940}
 
   .dashboard-nav {
-    display: flex;
+    display: grid;
     gap: 0.35rem;
-    overflow-x: auto;
+    overflow-x: visible;
     scrollbar-width: thin;
   }
 
   .dashboard-nav button {
-    flex: 0 0 auto;
-    min-height: 40px;
-    width: auto;
-    padding: 0.35rem 0.55rem;
-    font-size: 0.75rem;
+    flex: none;
+    min-height: 44px;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.8rem;
   }
 
   .dashboard-nav button > span {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
   }
 
   .dashboard-sidebar-note {
@@ -740,6 +747,8 @@
     margin-bottom: 0.75rem;
     padding: 0.7rem;
   }
+  .dashboard-sidebar.is-open{transform:none;box-shadow:0 40px 80px rgba(15,40,52,0.25)}
+  .dash-scrim{position:fixed;inset:0;background:rgba(14,28,36,0.45);backdrop-filter:blur(2px);z-index:900}
 
   .dashboard-sidebar .dashboard-brand .brand-mark {
     width: 34px;
@@ -842,6 +851,8 @@
 
   .dashboard-page .panelhead {
     align-items: flex-start;
+    flex-wrap:wrap;
+    gap:.6rem;
   }
 
   .dashboard-page .panelhead input[type="date"] {
@@ -878,6 +889,8 @@
   .dashboard-page .invrow > span:first-child {
     overflow-wrap: anywhere;
   }
+  .dashboard-page .dash-book__banner{flex-direction:column;align-items:flex-start}
+  .dashboard-page .slotgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
 /* ==========================================================================
@@ -2664,13 +2677,14 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #d8ebef;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(48,139,158,0.18);
   border-radius: 12px;
-  background: #f4fbfd;
-  color: #315467;
+  background: rgba(255,255,255,0.95);
+  color: #26495a;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(20,60,80,0.06);
 }
 
 @media (max-width: 900px) {

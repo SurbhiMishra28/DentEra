@@ -245,7 +245,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
 
       <main className="dashboard-main" id="overview">
       <div className="topbar dashboard-toolbar">
-        <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)}><Menu size={20} /></button>
+        <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)} aria-expanded={sideOpen}><Menu size={20} /></button>
         <h1 className="ref-topbar-title">Dashboard</h1>
         <span className="spacer" />
         {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
