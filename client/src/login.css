@@ -592,9 +592,13 @@
 
   .login-aside {
     min-height: 0;
-    align-items: center;
+    /* hero copy left-aligns with the sign-in card below it — one consistent edge */
+    align-items: flex-start;
     padding: 1.6rem 1.4rem;
-    text-align: center;
+    text-align: left;
+  }
+  .login-aside ul {
+    justify-items: start;
   }
 
   .login-aside h1 {

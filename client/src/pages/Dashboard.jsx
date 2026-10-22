@@ -246,7 +246,7 @@ export default function Dashboard({ me, onChat, onLogout }) {
       <main className="dashboard-main" id="overview">
       <div className="topbar dashboard-toolbar">
         <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)} aria-expanded={sideOpen}><Menu size={20} /></button>
-        <h1 className="ref-topbar-title">Dashboard</h1>
+        <h1 className="ref-topbar-title">DentEra</h1>
         <span className="spacer" />
         {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
         <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
@@ -563,6 +563,24 @@ export default function Dashboard({ me, onChat, onLogout }) {
         </ul>
       </section>}
       </main>
+      <nav className="dash-bottomnav" aria-label="Mobile navigation">
+        <button type="button" className={activeSection === 'overview' ? 'dash-bottomnav__btn is-on' : 'dash-bottomnav__btn'} onClick={() => { setActiveSection('overview'); setSideOpen(false) }} aria-current={activeSection === 'overview' ? 'page' : undefined}>
+          <Home size={18} />
+          <span>Home</span>
+        </button>
+        <button type="button" className={activeSection === 'appointments' ? 'dash-bottomnav__btn is-on' : 'dash-bottomnav__btn'} onClick={() => { setActiveSection('appointments'); setSideOpen(false) }} aria-current={activeSection === 'appointments' ? 'page' : undefined}>
+          <CalendarCheck size={18} />
+          <span>Appointments</span>
+        </button>
+        <button type="button" className={activeSection === 'patients' ? 'dash-bottomnav__btn is-on' : 'dash-bottomnav__btn'} onClick={() => { setActiveSection('patients'); setSideOpen(false) }} aria-current={activeSection === 'patients' ? 'page' : undefined}>
+          <UserRound size={18} />
+          <span>Patients</span>
+        </button>
+        <button type="button" className={activeSection === 'billing' ? 'dash-bottomnav__btn is-on' : 'dash-bottomnav__btn'} onClick={() => { setActiveSection('billing'); setSideOpen(false) }} aria-current={activeSection === 'billing' ? 'page' : undefined}>
+          <IndianRupee size={18} />
+          <span>Billing</span>
+        </button>
+      </nav>
     </div>
   )
 }
