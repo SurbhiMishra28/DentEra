@@ -4,7 +4,7 @@ import Reveal from "../components/Reveal.jsx"
 import DentEraMark from "../components/DentEraMark.jsx"
 import EraStage from "../components/EraStage.jsx"
 import {
-  Tooth, Trophy, MapPin, Phone, Mail, ChevronDown,
+  Tooth, Trophy, MapPin, Phone, Mail, ChevronDown, Menu, XMark,
 } from "../components/Icons.jsx"
 import { SERVICES, DOCTORS, TESTIMONIALS, WHY_CHOOSE, GALLERY_IMAGES, TRUST_BADGES, BLOG_POSTS } from "../data/landingData.js"
 
@@ -13,6 +13,7 @@ export default function Landing() {
   const [eraOpen, setEraOpen] = useState(false)
   const [showAllDoctors, setShowAllDoctors] = useState(false)
   const [openPost, setOpenPost] = useState(null)
+  const [navOpen, setNavOpen] = useState(false)
 
   const visibleDoctors = showAllDoctors ? DOCTORS : DOCTORS.slice(0, 4)
 
@@ -21,13 +22,16 @@ export default function Landing() {
       {/* Navigation */}
       <header className="topbar landing-bar">
         <a className="brand landing-brand" href="#/" aria-label="DentEra home"><span className="brand-mark"><DentEraMark /></span> DentEra</a>
-        <nav className="landing-nav" aria-label="Main navigation">
-          <a href="#/">Home</a>
-          <a href="#/about">About</a>
-          <a href="#/services">Services</a>
-          <a href="#/why-choose">Why Choose</a>
-          <a href="#/gallery">Gallery</a>
-          <a href="#/blog">Blog</a>
+        <button type="button" className="landing-nav-toggle" aria-label={navOpen ? "Close menu" : "Open menu"} aria-expanded={navOpen} onClick={() => setNavOpen(o => !o)}>
+          {navOpen ? <XMark size={20} /> : <Menu size={20} />}
+        </button>
+        <nav className={"landing-nav" + (navOpen ? " is-open" : "")} aria-label="Main navigation">
+          <a href="#/" onClick={() => setNavOpen(false)}>Home</a>
+          <a href="#/about" onClick={() => setNavOpen(false)}>About</a>
+          <a href="#/services" onClick={() => setNavOpen(false)}>Services</a>
+          <a href="#/why-choose" onClick={() => setNavOpen(false)}>Why Choose</a>
+          <a href="#/gallery" onClick={() => setNavOpen(false)}>Gallery</a>
+          <a href="#/blog" onClick={() => setNavOpen(false)}>Blog</a>
         </nav>
         <a className="landing-cta" href="#/login">
           Get Started
