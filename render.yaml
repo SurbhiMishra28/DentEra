@@ -15,3 +15,8 @@ services:
         generateValue: true
       - key: DEMO_LOGIN
         value: "1"
+      # Era's hosted Sofia voice. sync:false = Render prompts for the value in the
+      # dashboard and stores it as a secret — the key never lives in this repo
+      # (Rules §1.6: secrets stay out of git; local .env carries the dev copy).
+      - key: NVIDIA_API_KEY
+        sync: false

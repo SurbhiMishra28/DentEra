@@ -425,3 +425,20 @@
 .bookview .medtrackhead { color: #16232d; }
 .bookview .medmuted { color: #5c6b76; }
 .bookview .list li { border-radius: 8px; }
+
+/* ---------- v1.2.2: phone pass — bigger yes/no tap targets ---------- */
+@media (max-width: 600px) {
+  .bookview .medcell {
+    padding: 0.45rem 0.9rem;   /* the radio itself is small; the cell is the tap target */
+    justify-content: center;
+  }
+  .bookview .medcell input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+  .bookview .medtable {
+    grid-template-columns: minmax(0, 1fr) 62px 62px;  /* keeps the question readable */
+  }
+  .bookview .medgrid { gap: 1rem; }
+  .bookview .medactions .medbtn { width: 100%; min-height: 52px; }
+}

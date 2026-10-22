@@ -721,3 +721,36 @@
 @media (max-width: 480px) {
   .demo-personas { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* =====================================================================
+   v1.2.2 — sign-in friendliness + mobile pass
+   (password visibility toggle, comfortable phone-sized tap targets)
+   ===================================================================== */
+
+/* password visibility toggle */
+.pwfield { position: relative; display: block; }
+.pwfield input { padding-right: 3rem; }
+.pwtoggle {
+  position: absolute; top: 50%; right: .35rem; transform: translateY(-50%);
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border-radius: 12px; background: transparent; color: #5b7a74; padding: 0; box-shadow: none;
+}
+.pwtoggle:hover { background: #eef7f6; filter: none; transform: translateY(-50%); }
+
+/* every header link gets a real 44px tap target */
+.login-header-links a {
+  min-height: 44px; display: inline-flex; align-items: center; padding: 0 .3rem;
+}
+
+@media (max-width: 800px) {
+  .loginform #loginF input { min-height: 54px; font-size: 1rem; }
+  .loginform #loginF button[type="submit"] { min-height: 54px; font-size: 1rem; }
+  .pwfield input { padding-right: 3.2rem; }
+  .demo-persona { min-height: 68px; }
+}
+
+@media (max-width: 480px) {
+  .login-header { padding: .6rem .9rem; }
+  .login-header-links a { font-size: .82rem; }
+  .loginform #loginF input { min-height: 52px; }
+}

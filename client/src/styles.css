@@ -29,14 +29,18 @@
   --grad-success:linear-gradient(135deg,#22b09a,#00695c);
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;font-size:16px}
+@media (max-width: 380px){html{font-size:15px}}
 body{
-  margin:0;font-family:Manrope,system-ui,sans-serif;color:var(--ink);min-height:100vh;
+  margin:0;font-family:Manrope,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);min-height:100vh;
   background:
     radial-gradient(1100px 600px at 88% -10%,#ffffff 0%,transparent 55%),
     radial-gradient(900px 620px at -12% 32%,#d4efec 0%,transparent 55%),
     linear-gradient(160deg,#f2faf8,#e2f1ee);
   -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
 }
 ::selection{background:#0fa79533}
 button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:.62rem 1.25rem;color:#fff;font-weight:700;
@@ -281,7 +285,7 @@ a.mini.primary{background:var(--grad);color:#fff}
 .cpLog::-webkit-scrollbar-thumb{background:#cfe6e2}
 @media(max-width:900px){.hero{grid-template-columns:1fr;text-align:center}.hero-copy{order:2}.hero-sub{margin-inline:auto}.hero-cta,.trust{justify-content:center}}
 @media(max-width:800px){.drawer{top:8px;right:8px;bottom:8px}.toothrow{gap:4px}.tooth{width:38px;height:34px;font-size:.7rem}.era-fab .fablabel{display:none}.era-fab{padding:.3rem}}
-@media(max-width:560px){.view{padding:1rem .8rem}.panel{padding:1rem .95rem}.statnum{font-size:1.3rem}}
+@media(max-width:560px){.view{padding:.9rem .75rem}.panel{padding:1rem .9rem}.statnum{font-size:1.3rem}.topbar{border-radius:16px;padding:.5rem .8rem}.btn{width:100%;justify-content:center}}
 /* ---- Era face: idle float/breathe · talk-pulse · listening ring ---- */
 .eraface{position:relative;display:grid;place-items:center}
 .eraface img{width:64px;height:64px;border-radius:50%;object-fit:cover;background:#fff;

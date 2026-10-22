@@ -45,3 +45,11 @@
 
 ## Known gaps (deliberate v1 deferrals)
 - Patient portal/login, payments gateway, X-ray uploads, child-teeth full grid — see [Prd.md §6](Prd.md)
+
+## v1.2.2 track (2026-10-21) — UX polish only, no new features — all ✅
+- [x] FE · Login: password visibility toggle (Eye/EyeOff), 44px header tap targets, comfortable phone-sized inputs
+- [x] FE · Dashboard borders: visible outlines on panels/ref-cards, accent spines on stat cards, header rules, crisper separators
+- [x] FE · Dashboard phone pass (≤600px): two-up stats, 44px tap targets, icon-only secondary links, stacking booking form, wrapping rows
+- [x] FE · Full-project phone pass (390px audit, every route): admin tables scroll inside their card (overflow-x fix — they were clipped), admin KPI/glance grids go 2×2, smaller table type, booking form yes/no cells get 44px tap targets + bigger radios, footer nav links get 44px targets, booking CTA full width. Verified: 0 sideways overflow on landing / login / dashboard / admin / patient detail / booking / section pages / 404; tooth chart wraps cleanly; Era chat drawer fits (374px, no clipping); testimonial marquee is clipped by design
+- [x] OPS · render.yaml: NVIDIA_API_KEY as a `sync: false` secret (Render prompts, key never enters git) — enables hosted Sofia voice on the deployment
+- [x] DOC · version bump 1.2.2 (UI behaviour change)

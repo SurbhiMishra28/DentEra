@@ -19,7 +19,9 @@ export default function App() {
   useEffect(() => {
     const onHash = () => {
       const hash = location.hash || '#/'
-      if (hash.startsWith('#/')) setRoute(hash)
+      // only treat "#/..." as a route change (page anchors like #doctors scroll natively).
+      // Landing at the top of each new screen keeps navigation feeling tidy on phones.
+      if (hash.startsWith('#/')) { setRoute(hash); window.scrollTo({ top: 0, left: 0, behavior: 'auto' }) }
     }
     addEventListener('hashchange', onHash)
     api.get('/api/auth/me').then(({ data }) => setMe(data.user || null))

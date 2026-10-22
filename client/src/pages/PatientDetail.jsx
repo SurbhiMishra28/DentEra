@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import ToothChart from '../components/ToothChart.jsx'
-import { AlertTriangle, MessageCircle } from '../components/Icons.jsx'
+import { ArrowLeft, AlertTriangle, MessageCircle, Tooth, ClipboardList, IndianRupee } from '../components/Icons.jsx'
+import './patientdetail.css'
+
+const initial = n => (n || '?').replace(/^Dr\.?\s*/i, '').trim()[0]?.toUpperCase() || '?'
 
 export default function PatientDetail({ me, id, onChat }) {
   const [chart, setChart] = useState(null)
@@ -42,23 +45,32 @@ export default function PatientDetail({ me, id, onChat }) {
   if (!chart) return <div className="view center">Loading…</div>
   const p = chart.patient
   return (
-    <div className="view">
-      <div className="topbar">
-        <a className="mini linkbtn" href="#/dashboard">← Dashboard</a>
-        <span className="who">{p.name} {p.dob ? `· b. ${p.dob}` : ''}</span>
-        {p.medical_notes && <span className="pill warnpill"><AlertTriangle size={12} /> {p.medical_notes}</span>}
-        <span className="spacer" />
-        {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={13} /> Ask Era</button>}
-      </div>
+    <div className="view patview">
+      <header className="patbar">
+        <a className="patbar-back" href="#/dashboard" aria-label="Back to dashboard"><ArrowLeft size={16} /> <span>Dashboard</span></a>
+        <div className="patbar-id">
+          <span className="patbar-avatar" aria-hidden="true">{initial(p.name)}</span>
+          <div className="patbar-idtext">
+            <b>{p.name}</b>
+            <small>{p.dob ? `Born ${p.dob}` : 'Patient record'}</small>
+          </div>
+        </div>
+        {me.role === 'dentist' && <button className="patbar-era" onClick={onChat} aria-label="Ask Era about this patient"><MessageCircle size={15} /> <span>Ask Era</span></button>}
+      </header>
 
-      <div className="panel">
-        <h3>Dental chart (FDI)</h3>
+      {p.medical_notes && (
+        <p className="patalert" role="note"><AlertTriangle size={16} /><span><b>Medical notes:</b> {p.medical_notes}</span></p>
+      )}
+      {msg && <p className="authmsg ok" role="status" aria-live="polite">{msg}</p>}
+
+      <section className="patpanel">
+        <h3><Tooth size={19} /> Dental chart (FDI)</h3>
         <ToothChart patientId={id} chart={{ ...chart, treatments }} onUpdated={load} />
-      </div>
+      </section>
 
-      <div className="grid2">
-        <section className="panel">
-          <h3>Treatment plans</h3>
+      <div className="patgrid">
+        <section className="patpanel">
+          <h3><ClipboardList size={19} /> Treatment plans</h3>
           {plans.length === 0 && <p className="empty">No plans yet.</p>}
           <ul className="list">
             {plans.map(pl => (
@@ -74,10 +86,12 @@ export default function PatientDetail({ me, id, onChat }) {
               <ul className="list">
                 {planDetail.items.map(it => (
                   <li key={it.id}>
-                    Visit {it.visit_no}: {it.treatment_name || 'Item'}{it.tooth_fdi ? ` (tooth ${it.tooth_fdi})` : ''} · ₹{it.cost} · <b>{it.status}</b>
+                    <div>Visit {it.visit_no}: {it.treatment_name || 'Item'}{it.tooth_fdi ? ` (tooth ${it.tooth_fdi})` : ''} · ₹{it.cost} · <b>{it.status}</b></div>
                     {me.role === 'dentist' && it.status === 'planned' && (
-                      <span className="rowgap"> <button className="mini" onClick={() => doItem(planDetail.plan.id, it.id, 'done')}>mark done</button>
-                      <button className="mini" onClick={() => doItem(planDetail.plan.id, it.id, 'cancelled')}>cancel</button></span>
+                      <span className="rowgap">
+                        <button className="mini" onClick={() => doItem(planDetail.plan.id, it.id, 'done')}>mark done</button>
+                        <button className="mini" onClick={() => doItem(planDetail.plan.id, it.id, 'cancelled')}>cancel</button>
+                      </span>
                     )}
                   </li>
                 ))}
@@ -86,21 +100,22 @@ export default function PatientDetail({ me, id, onChat }) {
           )}
         </section>
 
-        <section className="panel">
-          <h3>Invoices</h3>
+        <section className="patpanel">
+          <h3><IndianRupee size={19} /> Invoices</h3>
           {invoices.length === 0 && <p className="empty">No invoices.</p>}
           <ul className="list">
             {invoices.map(i => (
               <li key={i.id}>
-                <b>#{i.id}</b> ₹{i.amount}{i.discount ? ` − ₹${i.discount}` : ''} · paid ₹{i.paid_amount} · <b>{i.status}</b>
+                <div><b>#{i.id}</b> ₹{i.amount}{i.discount ? ` − ₹${i.discount}` : ''} · paid ₹{i.paid_amount} · <b>{i.status}</b></div>
                 {i.status !== 'paid' && me.role !== 'reception' && (
-                  <span className="rowgap"> <button className="mini" onClick={() => pay(i.id, true)}>mark fully paid</button>
-                  {i.status === 'unpaid' && <button className="mini" onClick={() => pay(i.id, false)}>half payment</button>}</span>
+                  <span className="rowgap">
+                    <button className="mini" onClick={() => pay(i.id, true)}>mark fully paid</button>
+                    {i.status === 'unpaid' && <button className="mini" onClick={() => pay(i.id, false)}>half payment</button>}
+                  </span>
                 )}
               </li>
             ))}
           </ul>
-          {msg && <p className="authmsg ok">{msg}</p>}
         </section>
       </div>
     </div>

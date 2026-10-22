@@ -1,0 +1,185 @@
+/* ==========================================================================
+   PatientDetail — mobile-first patient chart screen.
+   Matches the Dashboard teal/sky palette so the authenticated experience feels
+   like one product. Scoped under .patview so shared styles stay untouched.
+   ========================================================================== */
+
+.patview {
+  --pd-ink: #142f43;
+  --pd-muted: #607989;
+  --pd-teal: #116b82;
+  --pd-aqua: #1699ad;
+  --pd-line: #e2eef1;
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  padding: clamp(0.85rem, 2.5vw, 1.8rem);
+  min-height: 100vh;
+  color: var(--pd-ink);
+  background:
+    radial-gradient(ellipse at 95% 0%, rgba(182, 235, 244, 0.36), transparent 34%),
+    linear-gradient(180deg, #f3fbff 0%, #f9fcff 100%);
+}
+
+/* ---------- header ---------- */
+.patbar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.7rem clamp(0.75rem, 2vw, 1.1rem);
+  margin-bottom: 1rem;
+  border: 1px solid rgba(48, 139, 158, 0.12);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 28px rgba(24, 81, 102, 0.08);
+}
+
+.patbar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #d8ebef;
+  border-radius: 12px;
+  background: #f4fbfd;
+  color: #315467;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.patbar-back:hover {
+  background: #e6f5f9;
+  text-decoration: none;
+}
+.patbar-back svg { flex: 0 0 auto; }
+
+.patbar-id {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.patbar-avatar {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #38bdf8, #0284c7);
+  color: #fff;
+  font-size: 1.02rem;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.28);
+}
+
+.patbar-idtext {
+  min-width: 0;
+  display: grid;
+  gap: 0.05rem;
+}
+.patbar-idtext b {
+  color: var(--pd-ink);
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.patbar-idtext small {
+  color: var(--pd-muted);
+  font-size: 0.72rem;
+}
+
+.patbar-era {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 42px;
+  padding: 0.45rem 0.95rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1699ad, #116b82);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(17, 107, 130, 0.24);
+}
+.patbar-era:hover { filter: brightness(1.07); }
+
+/* ---------- medical-notes alert ---------- */
+.patalert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #f0dcba;
+  border-radius: 14px;
+  background: #fff7ec;
+  color: #7a5a12;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.patalert svg { flex: 0 0 auto; margin-top: 1px; color: #c07f0a; }
+.patalert b { color: #96660e; }
+
+/* ---------- panels ---------- */
+.patpanel {
+  min-width: 0;
+  margin-bottom: 1rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid rgba(48, 139, 158, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 32px rgba(24, 81, 102, 0.07);
+}
+.patpanel > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.4rem;
+  color: #18384b;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+.patpanel > h3 svg { color: var(--pd-teal); }
+
+/* ---------- two-column body → stacks on phones ---------- */
+.patgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+/* tidy the plan/invoice action buttons on small screens */
+.patview .mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.patview .rowgap { gap: 0.4rem; }
+
+/* plan detail block reuses the shared .toothpanel surface */
+.patview .toothpanel {
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .patbar {
+    padding: 0.6rem 0.7rem;
+    gap: 0.55rem;
+  }
+  .patbar-back span { display: none; }   /* icon-only back on phones */
+  .patbar-back { padding: 0.4rem 0.6rem; }
+  .patbar-id b { font-size: 0.9rem; }
+  .patbar-era span { display: none; }     /* icon-only Ask Era on phones */
+  .patbar-era { padding: 0.4rem 0.55rem; }
+  .patpanel { padding: 0.9rem; }
+}

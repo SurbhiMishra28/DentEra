@@ -4,7 +4,7 @@ import DentEraMark from '../components/DentEraMark.jsx'
 import {
   Home, LayoutGrid, UserRound, IndianRupee, Plus, Check, XMark, RotateCcw, Clock,
   Search, MessageCircle, Shield, AlertTriangle, ChevronRight, CalendarCheck, Users,
-  ClipboardList, Stethoscope, LogOut, Menu,
+  ClipboardList, Stethoscope, LogOut, Menu, Globe,
 } from '../components/Icons.jsx'
 import '../dashboard.css'
 
@@ -248,8 +248,8 @@ export default function Dashboard({ me, onChat, onLogout }) {
         <button type="button" className="dash-burger" aria-label="Toggle navigation menu" onClick={() => setSideOpen(o => !o)}><Menu size={20} /></button>
         <h1 className="ref-topbar-title">Dashboard</h1>
         <span className="spacer" />
-        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin"><Shield size={14} /> Admin panel</a>}
-        <a className="mini" href="#/book">Public booking</a>
+        {(me.role === 'admin' || me.role === 'reception') && <a className="mini" href="#/admin" title="Admin panel" aria-label="Admin panel"><Shield size={14} /><span className="hide-sm">Admin panel</span></a>}
+        <a className="mini" href="#/book" title="Public booking" aria-label="Public booking"><Globe size={14} /><span className="hide-sm">Public booking</span></a>
         {me.role === 'dentist' && <button className="mini primary ask-era" onClick={onChat}><MessageCircle size={14} /> Ask Era</button>}
       </div>
 

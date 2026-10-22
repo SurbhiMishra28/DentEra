@@ -942,3 +942,11 @@ button.blog-link{padding:0;border:0;background:none;font:inherit;text-align:left
 @keyframes bar{50%{height:17px}}
 
 @keyframes glow{50%{transform:scale(1.08);opacity:.6}}
+
+/* ---------- v1.2.2: phone pass — footer nav gets real tap targets ---------- */
+.landing .page-footer-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 .35rem;
+}

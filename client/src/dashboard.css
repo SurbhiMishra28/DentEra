@@ -3192,3 +3192,112 @@
 @media (max-width: 560px) {
   .dashboard-page .dash-fields { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   v1.2.2 — border lines + phone pass
+   Two additive blocks on top of the original sheet:
+   1) crisper outlines so the dashboard reads as clearly framed cards
+   2) a ≤600px layout: two-up stats, 44px tap targets, icon-only
+      secondary links, a booking form that stacks, rows that wrap
+   ===================================================================== */
+
+/* ---------- 1) border lines ---------- */
+.dashboard-page .panel,
+.dashboard-page .ref-card {
+  border: 1px solid #d3e4e9;               /* panels get a visible outline (was near-invisible) */
+}
+.dashboard-page .stats .stat {
+  border: 1.5px solid rgba(48, 139, 158, 0.18);  /* stat cards read as framed tiles */
+  border-left-width: 4px;                 /* accent spine per card type */
+}
+.dashboard-page .stats .stat--sky   { border-left-color: #0ea5e9; }
+.dashboard-page .stats .stat--mint  { border-left-color: #22c55e; }
+.dashboard-page .stats .stat--teal  { border-left-color: #0d9488; }
+.dashboard-page .ref-card-head {
+  border-bottom: 1px solid #e4eef1;        /* separate card headers from their content */
+  padding-bottom: .55rem;
+}
+.dashboard-page .pagehead {
+  border-bottom: 1px solid #dfecef;
+  padding-bottom: .8rem;
+}
+.dashboard-page .dashboard-toolbar {
+  border: 1px solid rgba(48, 139, 158, 0.16);
+}
+.dashboard-page .apptlist li.appt:not(:last-child)::after {
+  background: #dfecef;                    /* crisper day-view separators */
+}
+
+/* ---------- 2) phone pass (≤600px) ---------- */
+@media (max-width: 600px) {
+  /* stat cards two-up. Same selector (and specificity) as the ≤860px single-column
+     rule for .ref-stats:not(.ref-stats--4) — this block is later in the file, so it wins.
+     With three cards the last one spans the full row (2 + 1). */
+  .dashboard-page .ref-stats:not(.ref-stats--4) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .dashboard-page .stats .stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-height: 0;
+    padding: 0.85rem 0.9rem;
+  }
+  .dashboard-page .stats .stat-icon { width: 38px; height: 38px; }
+  .dashboard-page .statlabel { font-size: 0.7rem; }
+  .dashboard-page .stat-foot { font-size: 0.78rem; }
+
+  /* comfortable tap targets everywhere (44px guidance) */
+  .dashboard-page .mini,
+  .dashboard-toolbar .mini,
+  .dashboard-toolbar a.mini { min-height: 40px; font-size: 0.78rem; padding: 0 0.7rem; }
+  .dashboard-page .apptlist .mini,
+  .dashboard-page .invrow .mini,
+  .dashboard-page .list .mini { min-height: 38px; }
+  .dashboard-page .chev { min-width: 44px; min-height: 44px; display: grid; place-items: center; margin: -12px; }
+  .dash-burger { min-width: 44px; min-height: 44px; }
+
+  /* toolbar: the essentials stay; secondary links drop their label (icon-only) */
+  .dashboard-toolbar { row-gap: 0.45rem; padding: 0.5rem 0.6rem; }
+  .dashboard-page .ref-topbar-title { font-size: 1.05rem; }
+  .hide-sm { display: none; }
+
+  /* booking studio stacks instead of squeezing */
+  .dash-fields { grid-template-columns: minmax(0, 1fr) !important; }
+  .dash-book { padding: 0.9rem; }
+  .dash-book__banner { flex-direction: column; align-items: flex-start; }
+  .rowForm .grid3 { grid-template-columns: minmax(0, 1fr); }
+
+  /* appointment and invoice rows wrap their actions to their own line */
+  .apptlist li.appt { flex-wrap: wrap; }
+  .apptlist li.appt .rowgap { width: 100%; }
+  .invrow { flex-direction: column; align-items: flex-start; }
+  .invrow .rowgap { width: 100%; }
+}
+
+/* ---------- v1.2.2 continued: full-project phone pass ---------- */
+
+/* wide tables scroll inside their card instead of being clipped on phones */
+.dashboard-page .tablewrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  /* admin overview: the 4-up KPI grid and glance tiles go two-by-two */
+  .dashboard-page .ref-stats--4,
+  .dashboard-page .ref-stats.ref-stats--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .dashboard-page .ref-glance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* tables: smaller type so more fits before scrolling kicks in */
+  .dashboard-page .tbl { font-size: 0.8rem; }
+  .dashboard-page .tbl th, .dashboard-page .tbl td { padding: 0.5rem 0.55rem; }
+  /* the 7-day workload bars keep readable labels */
+  .dashboard-page .ref-bars { gap: 0.3rem; }
+  .dashboard-page .ref-bar-label { font-size: 0.62rem; }
+}
